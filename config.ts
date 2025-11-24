@@ -13,7 +13,7 @@ type STAGE = 'development' | 'production'
 const configEnvs: { [K in STAGE]: ConfigEnv } = {
   development: {
     httpApiOrigin: 'http://localhost:3001',
-    websocketApiOrigin: 'wss://localhost:8080',
+    websocketApiOrigin: 'ws://localhost:8080',
   },
   production: {
     httpApiOrigin: 'https://streaming-api.jounetsism.biz',

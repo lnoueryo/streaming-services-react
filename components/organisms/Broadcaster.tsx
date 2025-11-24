@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import output from '@/config';
+import { SignalingClient } from '@/lib/websocket/signaling-client';
 
 interface PageProps { id: string; }
 type MessageEventType = 'offer' | 'answer' | 'candidate';
@@ -43,10 +44,51 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           };
         }
 
-        const pc = new RTCPeerConnection();
+        let pc = new RTCPeerConnection();
         stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-        // ✅ リモート受信
+        // --- WebRTC 切断検知 ---
+        pc.oniceconnectionstatechange = () => {
+          console.log("ICE state:", pc.iceConnectionState);
+
+          if (
+            pc.iceConnectionState === "disconnected" ||
+            pc.iceConnectionState === "failed"
+          ) {
+            console.warn("🔥 ICE state failed/disconnected — reconnect WebRTC");
+            reconnectWebRTC();
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          console.log("PC state:", pc.connectionState);
+
+          if (
+            pc.connectionState === "failed" ||
+            pc.connectionState === "disconnected" ||
+            pc.connectionState === "closed"
+          ) {
+            console.warn("❌ PeerConnection disconnected — restarting...");
+            reconnectWebRTC();
+          }
+        };
+
+        // --- 再接続ロジック ---
+        const reconnectWebRTC = async () => {
+          try {
+            pc.close();
+          } catch (e) {}
+
+          console.log("♻️ Reconnecting WebRTC...");
+
+          // 新しい PeerConnection を生成しなおす
+          const newPc = new RTCPeerConnection();
+          stream.getTracks().forEach((t) => newPc.addTrack(t, stream));
+
+          pc = newPc;
+          signaling.send({ event: "offer" });
+        };
+                // ✅ リモート受信
         pc.ontrack = (event) => {
           if (event.track.kind === 'audio') return;
 
@@ -69,35 +111,19 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
         };
 
         // ✅ シグナリング
-        const ws = new WebSocket(
-          `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`
+        const signaling = new SignalingClient(
+          `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
+          pc
         );
 
         pc.onicecandidate = (e) => {
-          if (e.candidate) send(ws, { event: 'candidate', data: e.candidate });
+          if (e.candidate) signaling.send({ event: 'candidate', data: e.candidate });
         };
 
-        ws.onopen = () => send(ws, { event: 'offer' });
-
-        ws.onmessage = (evt) => {
-          const msg = JSON.parse(evt.data);
-          if (!msg?.event) return;
-
-          if (msg.event === 'offer') {
-            pc.setRemoteDescription(msg.data);
-            pc.createAnswer().then((answer) => {
-              pc.setLocalDescription(answer);
-              send(ws, { event: 'answer', data: answer });
-            });
-          }
-
-          if (msg.event === 'candidate') {
-            pc.addIceCandidate(new RTCIceCandidate(msg.data));
-          }
-        };
-
+        signaling.connect();
         cleanup = () => {
-          ws.close();
+          signaling.send({ type: "bye" });
+          signaling.close();
           pc.close();
           stream.getTracks().forEach((t) => t.stop());
         };
