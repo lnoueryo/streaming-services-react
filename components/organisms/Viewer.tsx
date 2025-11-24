@@ -57,23 +57,8 @@ export default function Viewer({ id }: PageProps) {
 
       // ---------- Signaling ----------
       signaling = new SignalingClient(
-        `${output.websocketApiOrigin}/ws/live/${id}/${Math.random()}`,
-        async (msg) => {
-          if (msg.event === "offer") {
-            await pc!.setRemoteDescription(msg.data);
-            const ans = await pc!.createAnswer();
-            await pc!.setLocalDescription(ans);
-            signaling!.send({ event: "answer", data: ans });
-          }
-
-          if (msg.event === "candidate") {
-            pc!.addIceCandidate(new RTCIceCandidate(msg.data));
-          }
-        },
-        () => {
-          // Viewer 初回は offer を送らない
-          signaling!.send({ type: "ready" });
-        }
+        `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
+        pc
       );
 
       signaling.connect();
