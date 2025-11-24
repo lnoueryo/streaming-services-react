@@ -4,14 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthService from '@/lib/auth/auth.service';
 import type { AuthUser } from '@/lib/auth/types';
-import { createRoom, fetchPublicRooms, Rooms } from '@/repositories/room.repository';
-import Link from 'next/link';
+import { createRoom } from '@/repositories/room.repository';
 
 export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [checking, setChecking] = useState(true);
-  const [rooms, setRooms] = useState<Rooms | null>(null);
 
   // 🔐 認証チェック（未ログイン → /login）
   useEffect(() => {
@@ -20,8 +18,6 @@ export default function HomePage() {
         router.replace('/login');
       } else {
         setUser(u);
-        const rooms = await fetchPublicRooms({page: 1, limit: 20});
-        setRooms(rooms)
         setChecking(false);
       }
     });
@@ -63,17 +59,6 @@ export default function HomePage() {
         >
           ログアウト
         </button>
-      </div>
-      <div>
-        <ul>
-          {rooms?.items.map((room) => (
-            <li key={room.id}>
-              <Link href={`/room/${room.id}`}>
-                {room.id}
-              </Link>
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );

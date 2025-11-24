@@ -1,37 +1,28 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-interface PageProps {
-  id: string
-}
-type MessageEventType = 'offer' | 'answer' | 'candidate'
-type WSMessage = { event: MessageEventType; data?: any }
+interface PageProps { id: string }
+type MessageEventType = 'offer' | 'answer' | 'candidate';
+type WSMessage = { event: MessageEventType; data?: any };
 
 const Broadcaster: React.FC<PageProps> = ({ id }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  // let ctx: CanvasRenderingContext2D | null
   const remoteVideosRef = useRef<HTMLDivElement>(null);
-  const logsRef = useRef<HTMLDivElement>(null);
+  const [remoteCount, setRemoteCount] = useState(0);
+  const [showLocal, setShowLocal] = useState(true);
+
+  const toggleLocal = () => setShowLocal((v) => !v);
+
   const send = (ws: WebSocket, msg: WSMessage) => {
-    ws.send(JSON.stringify(msg))
-  }
+    ws.send(JSON.stringify(msg));
+  };
+
   useEffect(() => {
+    let cleanup: (() => void) | null = null;
 
-    // const localVideo = localVideoRef.current
-    // const canvas = canvasRef.current
-    // if (!localVideo || !canvas) {
-    //   return
-    // }
-
-    // const ctx = canvas.getContext('2d')!;
-    // const caption = 'テスト配信中...';
-
-    // draw(caption, ctx, localVideo, canvas);
     const start = async () => {
       try {
-        // ✅ カメラ・マイクの取得
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
@@ -41,178 +32,146 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           localVideoRef.current.srcObject = stream;
         }
 
-        // ✅ PeerConnection 作成
         const pc = new RTCPeerConnection();
-
-        // テロップ
-        // const mixedStream = canvasRef.current!.captureStream(30); // 30fps
-        // const audioTrack = stream.getAudioTracks()[0];
-        // mixedStream.addTrack(audioTrack);
-        // mixedStream.getTracks().forEach(track => pc.addTrack(track, mixedStream));
-
-        // ローカルのトラックを追加
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-        // ✅ リモートトラック受信時の処理
-        pc.ontrack = (event: RTCTrackEvent) => {
+        pc.ontrack = (event) => {
           if (event.track.kind === 'audio') return;
 
-          const remoteStream = event.streams[0] || new MediaStream([event.track]);
+          const remoteStream =
+            event.streams[0] || new MediaStream([event.track]);
           const videoEl = document.createElement('video');
           videoEl.srcObject = remoteStream;
           videoEl.autoplay = true;
-          videoEl.controls = true;
-          videoEl.muted = true;
           videoEl.playsInline = true;
+          videoEl.className =
+            'w-full h-full object-cover rounded-lg shadow';
 
           remoteVideosRef.current?.appendChild(videoEl);
 
-          event.track.onunmute = () => videoEl.play();
+          setRemoteCount(remoteVideosRef.current?.children.length ?? 0);
 
           remoteStream.onremovetrack = () => {
-            if (videoEl.parentNode) videoEl.parentNode.removeChild(videoEl);
+            videoEl.remove();
+            setRemoteCount(remoteVideosRef.current?.children.length ?? 0);
           };
-
-          videoEl.muted = false;
         };
 
-        // ✅ WebSocket接続
         const ws = new WebSocket(
-          `ws://localhost:8080/ws/live/${id}/${Math.floor(Math.random() * (10000 + 1))}`
+          `${process.env.NEXT_PUBLIC_SIGNALING}/ws/live/${id}/${Math.floor(
+            Math.random() * 10000
+          )}`
         );
 
-        pc.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
-          if (e.candidate) {
-            send(ws, { event: 'candidate', data: e.candidate });
+        pc.onicecandidate = (e) => {
+          if (e.candidate) send(ws, { event: 'candidate', data: e.candidate });
+        };
+
+        ws.onopen = () => send(ws, { event: 'offer' });
+
+        ws.onmessage = (evt) => {
+          const msg = JSON.parse(evt.data);
+          if (!msg.event) return;
+
+          if (msg.event === 'offer') {
+            pc.setRemoteDescription(msg.data);
+            pc.createAnswer().then((answer) => {
+              pc.setLocalDescription(answer);
+              send(ws, { event: 'answer', data: answer });
+            });
+          }
+
+          if (msg.event === 'candidate') {
+            pc.addIceCandidate(new RTCIceCandidate(msg.data));
           }
         };
 
-        ws.onopen = () => {
-          log('WebSocket connected');
-          send(ws, { event: 'offer' });
-        };
-
-        ws.onclose = () => {
-          log('WebSocket closed');
-        };
-
-        ws.onmessage = (evt: MessageEvent) => {
-          try {
-            const msg = JSON.parse(evt.data);
-            if (!msg || !msg.event) return;
-
-            switch (msg.event) {
-              case 'offer':
-                const offer = msg.data;
-                if (!offer) return log('Invalid offer');
-                pc.setRemoteDescription(offer);
-                pc.createAnswer().then((answer) => {
-                  pc.setLocalDescription(answer);
-                  send(ws, { event: 'answer', data: answer });
-                });
-                break;
-
-              case 'candidate':
-                const candidate = msg.data;
-                if (!candidate) return log('Invalid candidate');
-                pc.addIceCandidate(new RTCIceCandidate(candidate));
-                break;
-            }
-          } catch (err) {
-            log('Failed to parse WebSocket message: ' + err);
-          }
-        };
-
-        ws.onerror = (evt: Event) => {
-          log('WebSocket error');
-        };
-
-        // ✅ ログ表示関数
-        function log(msg: string) {
-          console.log(msg);
-          if (logsRef.current) {
-            const p = document.createElement('p');
-            p.textContent = msg;
-            logsRef.current.appendChild(p);
-          }
-        }
-
-        // ✅ 終了時クリーンアップ
-        return () => {
+        // ---- 正しい cleanup を同期で返す ----
+        cleanup = () => {
           ws.close();
           pc.close();
-          stream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((t) => t.stop());
         };
+
       } catch (err) {
         alert(err);
       }
     };
 
-    const cleanupPromise = start();
+    start();
 
-    // Reactのクリーンアップ
     return () => {
-      cleanupPromise.then((cleanup) => {
-        if (typeof cleanup === 'function') cleanup();
-      });
+      if (cleanup) cleanup();
     };
   }, []);
 
-  function draw(caption: string, ctx: CanvasRenderingContext2D, video: HTMLVideoElement, canvas: HTMLCanvasElement) {
-    if (video.readyState >= 2) {
-      const videoAspect = video.videoWidth / video.videoHeight;
-      const canvasAspect = canvas.width / canvas.height;
-      let renderWidth, renderHeight, x, y;
-
-      // --- アスペクト比を維持して中央に描画 ---
-      if (videoAspect > canvasAspect) {
-        // カメラが横長 → 縦合わせ
-        renderHeight = canvas.height;
-        renderWidth = renderHeight * videoAspect;
-        x = (canvas.width - renderWidth) / 2;
-        y = 0;
-      } else {
-        // カメラが縦長 → 横合わせ
-        renderWidth = canvas.width;
-        renderHeight = renderWidth / videoAspect;
-        x = 0;
-        y = (canvas.height - renderHeight) / 2;
-      }
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(video, x, y, renderWidth, renderHeight);
-
-      // --- テロップ ---
-      ctx.font = '24px sans-serif';
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      const boxHeight = 40;
-      ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
-      ctx.fillStyle = 'white';
-      ctx.fillText(caption, 20, canvas.height - 12);
-    }
-    requestAnimationFrame(() => draw(caption, ctx, video, canvas));
-  }
-
   return (
-    <div>
-      <h3>Local Video</h3>
-      <video
-        ref={localVideoRef}
-        width={160}
-        height={120}
-        autoPlay
-        muted
-        playsInline
-      />
-      {/* <canvas ref={canvasRef} width={1280} height={720}></canvas> */}
-      <br />
+    <div className="relative w-full h-screen bg-black overflow-hidden">
 
-      <h3>Remote Video</h3>
-      <div ref={remoteVideosRef}></div>
-      <br />
+      {/* Participants Grid */}
+      <div
+        ref={remoteVideosRef}
+        className={`
+          grid gap-2 w-full h-full p-2 overflow-y-scroll
 
-      <h3>Logs</h3>
-      <div ref={logsRef}></div>
+          ${remoteCount === 1 ? "grid-cols-1" : ""}
+
+          /* ⭐ 2人のときは縦並び（1列）*/
+          ${remoteCount === 2 ? "grid-cols-1 sm:grid-cols-2" : ""}
+          /* 3人以上は元のレイアウト */
+          ${remoteCount >= 3 ? "grid-cols-2 sm:grid-cols-3" : ""}
+        `}
+      ></div>
+
+      {/* Local PiP */}
+      <div
+        className={`
+          absolute bottom-3 right-3
+          w-28 h-44 sm:w-36 sm:h-56
+          rounded-lg overflow-hidden border border-white/20 bg-black/80 shadow-xl
+          transition-all duration-200
+          ${showLocal ? "opacity-100" : "opacity-0 pointer-events-none"}
+        `}
+      >
+        <video
+          ref={localVideoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
+
+        {/* 非表示ボタン */}
+        {showLocal && (
+          <button
+            onClick={toggleLocal}
+            className="
+              absolute top-1 right-1 bg-black/60 hover:bg-black/80
+              text-white text-xs px-2 py-0.5 rounded
+            "
+          >
+            ×
+          </button>
+        )}
+
+        <p className="text-[10px] text-white/70 absolute bottom-0 w-full text-center bg-black/30">
+          あなたの映像
+        </p>
+      </div>
+
+      {/* 表示ボタン */}
+      {!showLocal && (
+        <button
+          onClick={toggleLocal}
+          className="
+            absolute bottom-3 right-3
+            bg-white/10 hover:bg-white/20 text-white
+            px-3 py-2 text-xs rounded-lg shadow-xl
+          "
+        >
+          あなたの映像を表示
+        </button>
+      )}
     </div>
   );
 };
