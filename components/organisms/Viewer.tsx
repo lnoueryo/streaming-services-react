@@ -1,4 +1,5 @@
 "use client";
+import output from "@/config";
 import React, { useEffect, useRef } from "react";
 
 interface PageProps {
@@ -42,7 +43,7 @@ const Viewer: React.FC<PageProps> = ({ id }) => {
     };
 
     const ws = new WebSocket(
-      `ws://localhost:8080/ws/live/${id}/${Math.floor(Math.random() * 1000)}`
+      `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 1000)}`
     );
 
     pc.onicecandidate = (e: RTCPeerConnectionIceEvent) => {

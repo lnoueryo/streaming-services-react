@@ -1,4 +1,5 @@
 // lib/api.ts
+import output from '@/config';
 import AuthService from '@/lib/auth/auth.service';
 
 function buildQuery(params?: Record<string, any>) {
@@ -13,7 +14,7 @@ function buildQuery(params?: Record<string, any>) {
 }
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API}${url}`, options);
+  const res = await fetch(`${output.httpApiOrigin}${url}`, options);
 
   if (res.status === 401) {
     await AuthService.signOut();

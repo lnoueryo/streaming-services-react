@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import output from '@/config';
 
 interface PageProps { id: string; }
 type MessageEventType = 'offer' | 'answer' | 'candidate';
@@ -69,7 +70,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
 
         // ✅ シグナリング
         const ws = new WebSocket(
-          `${process.env.NEXT_PUBLIC_SIGNALING}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`
+          `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`
         );
 
         pc.onicecandidate = (e) => {

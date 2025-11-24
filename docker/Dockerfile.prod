@@ -1,22 +1,49 @@
-# ---- Build Stage ----
-FROM node:20-alpine AS builder
+# ----------------------------
+#  Base (高速化用底レイヤー)
+# ----------------------------
+FROM node:20-alpine AS base
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+# pnpm の方が圧倒的に速いので使う（npm の3倍速）
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
+
+# ----------------------------
+#  Dependencies キャッシュ
+# ----------------------------
+FROM base AS deps
+
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
+
+
+# ----------------------------
+#  Build
+# ----------------------------
+FROM base AS builder
+
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
 
-# ---- Production Stage ----
-FROM node:20-alpine
+RUN pnpm build
+
+
+# ----------------------------
+#  Production Runner
+# ----------------------------
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --omit=dev
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY package.json ./
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
