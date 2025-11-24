@@ -1,102 +1,154 @@
 "use client";
+
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import output from "@/config";
-import React, { useEffect, useRef } from "react";
+import { SignalingClient } from "@/lib/websocket/signaling-client";
 
 interface PageProps {
-  id: string
+  id: string;
 }
-type MessageEventType = 'offer' | 'answer' | 'candidate'
-type WSMessage = { event: MessageEventType; data?: any }
 
-const Viewer: React.FC<PageProps> = ({ id }) => {
-  const remoteVideosRef = useRef<HTMLDivElement>(null);
-  const send = (ws: WebSocket, msg: WSMessage) => {
-    ws.send(JSON.stringify(msg))
-  }
+interface RemoteVideoItem {
+  id: string;
+  stream: MediaStream;
+}
+
+export default function Viewer({ id }: PageProps) {
+  const [remoteVideos, setRemoteVideos] = useState<RemoteVideoItem[]>([]);
+  const remoteCount = remoteVideos.length;
+
   useEffect(() => {
-    let mute = false;
-    (async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({
-          video: false,
-          audio: true,
-        });
-      } catch (error) {
-        mute = true
-      }
-    })()
-    const pc = new RTCPeerConnection();
+    let pc: RTCPeerConnection | null = null;
+    let signaling: SignalingClient | null = null;
 
-    pc.ontrack = (event: RTCTrackEvent) => {
-      if (event.track.kind === "audio") return;
+    const addStream = (stream: MediaStream) => {
+      setRemoteVideos((prev) => {
+        if (prev.some((v) => v.stream.id === stream.id)) return prev;
+        return [...prev, { id: `${stream.id}`, stream }];
+      });
+    };
 
-      const el = document.createElement(event.track.kind) as HTMLVideoElement;
-      el.srcObject = event.streams[0];
-      el.autoplay = true;
-      el.controls = true;
-      el.muted = mute;
-      el.playsInline = true;
-      remoteVideosRef.current?.appendChild(el);
-      event.streams[0].onremovetrack = () => {
-        if (el.parentNode) el.parentNode.removeChild(el);
+    const removeStream = (id: string) => {
+      setRemoteVideos((prev) => prev.filter((v) => v.id !== id));
+    };
+
+    const startWebRTC = () => {
+      pc = new RTCPeerConnection();
+
+      pc.ontrack = (event) => {
+        if (event.track.kind !== "video") return;
+
+        const stream = event.streams[0] || new MediaStream([event.track]);
+        addStream(stream);
+
+        stream.onremovetrack = () => removeStream(stream.id);
       };
-    };
 
-    const ws = new WebSocket(
-      `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 1000)}`
-    );
-
-    pc.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
-      if (e.candidate) {
-        send(ws, { event: "candidate", data: e.candidate.toJSON() });
-      }
-    };
-
-    ws.onmessage = (evt: MessageEvent) => {
-      try {
-        const msg: WSMessage = JSON.parse(evt.data);
-        if (!msg?.event) return;
-
-        switch (msg.event) {
-          case "offer":
-            if (!msg.data) return console.error("Invalid offer");
-            pc.setRemoteDescription(msg.data);
-            pc.createAnswer().then((answer) => {
-              pc.setLocalDescription(answer);
-              send(ws, { event: "answer", data: answer });
-            });
-            break;
-
-          case "candidate":
-            if (!msg.data) return console.error("Invalid candidate");
-            pc.addIceCandidate(new RTCIceCandidate(msg.data));
-            break;
+      pc.onconnectionstatechange = () => {
+        if (
+          pc!.connectionState === "failed" ||
+          pc!.connectionState === "disconnected"
+        ) {
+          console.warn("Viewer WebRTC disconnected — restarting...");
+          restart();
         }
-      } catch (err) {
-        console.error("Failed to parse message:", err);
-      }
+      };
+
+      // ---------- Signaling ----------
+      signaling = new SignalingClient(
+        `${output.websocketApiOrigin}/ws/live/${id}/${Math.random()}`,
+        async (msg) => {
+          if (msg.event === "offer") {
+            await pc!.setRemoteDescription(msg.data);
+            const ans = await pc!.createAnswer();
+            await pc!.setLocalDescription(ans);
+            signaling!.send({ event: "answer", data: ans });
+          }
+
+          if (msg.event === "candidate") {
+            pc!.addIceCandidate(new RTCIceCandidate(msg.data));
+          }
+        },
+        () => {
+          // Viewer 初回は offer を送らない
+          signaling!.send({ type: "ready" });
+        }
+      );
+
+      signaling.connect();
     };
 
-    ws.onopen = () => {
-      send(ws, { event: "offer" });
+    const restart = () => {
+      try {
+        signaling?.close();
+        pc?.close();
+      } catch {}
+
+      pc = null;
+      signaling = null;
+
+      setTimeout(() => startWebRTC(), 1000);
     };
 
-    ws.onerror = (evt) => {
-      console.error("WebSocket error:", evt);
-    };
+    // start
+    startWebRTC();
 
-    return () => {
-      ws.close();
-      pc.close();
-    };
+    return () => restart();
   }, [id]);
 
   return (
-    <div>
-      <h3>Remote Video</h3>
-      <div id="remoteVideos" ref={remoteVideosRef}></div>
+    <div className="w-full h-screen bg-black overflow-hidden p-2">
+      <motion.div
+        layout
+        className={`
+          grid gap-2 w-full h-full
+
+          ${remoteCount === 1 ? "grid-cols-1" : ""}
+          ${remoteCount === 2 ? "grid-cols-1 sm:grid-cols-2" : ""}
+          ${remoteCount >= 3 ? "grid-cols-2 sm:grid-cols-3" : ""}
+        `}
+      >
+        <AnimatePresence>
+          {remoteVideos.map((v) => (
+            <motion.div
+              key={v.id}
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.25 }}
+              className="relative rounded-lg overflow-hidden shadow-lg bg-black"
+            >
+              <video
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                ref={(el) => {
+                  if (el && el.srcObject !== v.stream) {
+                    el.srcObject = v.stream;
+                    el.onloadedmetadata = () => el.play().catch(() => {});
+                  }
+                }}
+              />
+
+              <button
+                className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
+                onClick={(e) => {
+                  const video = (
+                    e.currentTarget.parentNode as HTMLElement
+                  ).querySelector("video")!;
+                  video.muted = !video.muted;
+                  if (!video.muted) video.play().catch(() => {});
+                }}
+              >
+                音声
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
-};
-
-export default Viewer;
+}

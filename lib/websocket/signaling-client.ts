@@ -1,15 +1,21 @@
 export class SignalingClient {
   private url: string;
   private ws: WebSocket | null = null;
-  private pc: RTCPeerConnection;
-  private reconnectTimer: any = null;
   private heartbeatTimer: any = null;
   private retry = 0;
   private maxRetry = 20;
 
-  constructor(url: string, pc: RTCPeerConnection) {
+  private onMessageCallback: (msg: any) => void;
+  private onOpenCallback: () => void;
+
+  constructor(
+    url: string,
+    onMessage: (msg: any) => void,
+    onOpen?: () => void
+  ) {
     this.url = url;
-    this.pc = pc;
+    this.onMessageCallback = onMessage;
+    this.onOpenCallback = onOpen || (() => {});
   }
 
   connect() {
@@ -19,43 +25,31 @@ export class SignalingClient {
       console.log("WS connected");
       this.retry = 0;
 
-      // keep-alive
       this.startHeartbeat();
-
-      // 最初の offer 要求
-      this.send({ event: "offer" });
+      this.onOpenCallback();
     };
 
     this.ws.onmessage = (ev) => {
-      const msg = JSON.parse(ev.data);
-      if (!msg.event) return;
-
-      if (msg.event === "offer") {
-        this.pc.setRemoteDescription(msg.data);
-        this.pc.createAnswer().then((ans) => {
-          this.pc.setLocalDescription(ans);
-          this.send({ event: "answer", data: ans });
-        });
-      }
-
-      if (msg.event === "candidate") {
-        this.pc.addIceCandidate(new RTCIceCandidate(msg.data));
+      try {
+        const msg = JSON.parse(ev.data);
+        this.onMessageCallback(msg);
+      } catch (e) {
+        console.error("WS parse failed", e);
       }
     };
 
     this.ws.onerror = () => {};
+
     this.ws.onclose = () => {
-      console.warn("WS closed, reconnecting...");
+      console.warn("WS closed, reconnect...");
       this.stopHeartbeat();
       this.reconnect();
     };
   }
 
   private reconnect() {
-    if (this.retry >= this.maxRetry) {
-      console.error("WS failed to reconnect.");
-      return;
-    }
+    if (this.retry >= this.maxRetry) return;
+
     this.retry++;
     setTimeout(() => this.connect(), 2000);
   }
@@ -72,15 +66,11 @@ export class SignalingClient {
   }
 
   public send(data: any) {
-    try {
-      this.ws?.send(JSON.stringify(data));
-    } catch {}
+    this.ws?.send(JSON.stringify(data));
   }
 
   public close() {
-    try {
-      this.stopHeartbeat();
-      this.ws?.close();
-    } catch {}
+    this.stopHeartbeat();
+    this.ws?.close();
   }
 }

@@ -113,7 +113,21 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
         // ✅ シグナリング
         const signaling = new SignalingClient(
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
-          pc
+          (msg) => {
+            if (msg.event === "answer") {
+              pc.setRemoteDescription(msg.data);
+            }
+            if (msg.event === "candidate") {
+              pc.addIceCandidate(new RTCIceCandidate(msg.data));
+            }
+          },
+          () => {
+            // open 時に offer 送信
+            pc.createOffer().then((offer) => {
+              pc.setLocalDescription(offer);
+              signaling.send({ event: "offer", data: offer });
+            });
+          }
         );
 
         pc.onicecandidate = (e) => {
