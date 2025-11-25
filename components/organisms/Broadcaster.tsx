@@ -21,11 +21,28 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
   const [showLocal, setShowLocal] = useState(true);
   const remoteCount = remoteVideos.length;
 
-  const toggleLocal = () => setShowLocal((v) => !v);
-
-  const send = (ws: WebSocket, msg: WSMessage) => ws.send(JSON.stringify(msg));
-
   useEffect(() => {
+    const connection = (navigator as any).connection || {};
+    const effectiveType = connection.effectiveType; // "wifi", "4g", etc.
+    const isWifi = effectiveType === 'wifi';
+    const username = 'streaming'
+    const credential = '147d74531ecb2e76afb26a6286ce4579'
+    const iceServers = isWifi
+      ? [
+          { urls: ['turns:turn.jounetsism.biz:443?transport=tcp'], username, credential },
+          { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
+          { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential }
+        ]
+      : [
+          { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential },
+          { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
+          { urls: ['turns:turn.jounetsism.biz:443?transport=tcp'], username, credential }
+        ];
+    const config: RTCConfiguration  = {
+      iceServers,
+      iceTransportPolicy: isWifi ? 'all' : 'relay',
+      iceCandidatePoolSize: 2
+    };
     let cleanup: (() => void) | null = null;
 
     const start = async () => {
@@ -45,22 +62,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
         }
 
         // ---- 低遅延向け RTCPeerConnection 設定 ----
-        let pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            {
-              urls: "turn:114.69.40.111:3478?transport=udp",
-              username: "streaming",
-              credential: "147d74531ecb2e76afb26a6286ce4579",
-            },
-            {
-              urls: "turns:114.69.40.111:443?transport=tcp",
-              username: "streaming",
-              credential: "147d74531ecb2e76afb26a6286ce4579",
-            },
-          ],
-          iceCandidatePoolSize: 2,
-        });
+        let pc = new RTCPeerConnection(config);
 
         // ---- シミュルキャスト（低遅延寄り）----
         stream.getTracks().forEach((track) => {
@@ -111,22 +113,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
 
           console.log("♻️ Reconnecting WebRTC...");
 
-          const newPc = new RTCPeerConnection({
-            iceServers: [
-              { urls: "stun:stun.l.google.com:19302" },
-              {
-                urls: "turn:114.69.40.111:3478?transport=udp",
-                username: "streaming",
-                credential: "147d74531ecb2e76afb26a6286ce4579",
-              },
-              {
-                urls: "turns:114.69.40.111:443?transport=tcp",
-                username: "streaming",
-                credential: "147d74531ecb2e76afb26a6286ce4579",
-              },
-            ],
-            iceCandidatePoolSize: 2,
-          });
+          const newPc = new RTCPeerConnection(config);
 
           // ここで **newPc** に addTrack する（←重要）
           stream.getTracks().forEach((track) => {
