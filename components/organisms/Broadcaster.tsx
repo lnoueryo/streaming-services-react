@@ -44,13 +44,46 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           };
         }
 
-        let pc = new RTCPeerConnection();
-        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+        // ---- 低遅延向け RTCPeerConnection 設定 ----
+        let pc = new RTCPeerConnection({
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            {
+              urls: "turn:114.69.40.111:3478?transport=udp",
+              username: "streaming",
+              credential: "147d74531ecb2e76afb26a6286ce4579",
+            },
+            {
+              urls: "turns:114.69.40.111:443?transport=tcp",
+              username: "streaming",
+              credential: "147d74531ecb2e76afb26a6286ce4579",
+            },
+          ],
+          iceCandidatePoolSize: 2,
+        });
+
+        // ---- シミュルキャスト（低遅延寄り）----
+        stream.getTracks().forEach((track) => {
+          const sender = pc.addTrack(track, stream);
+          if (track.kind === "video") {
+            const params = sender.getParameters();
+            if (!params.encodings) params.encodings = [{}];
+
+            params.encodings = [
+              { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
+              { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
+              { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
+            ];
+
+            sender.setParameters(params).catch((err) => {
+              console.warn("setParameters error:", err);
+            });
+          }
+        });
 
         // --- WebRTC 切断検知 ---
         pc.oniceconnectionstatechange = () => {
           console.log("ICE state:", pc.iceConnectionState);
-
           if (
             pc.iceConnectionState === "disconnected" ||
             pc.iceConnectionState === "failed"
@@ -62,7 +95,6 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
 
         pc.onconnectionstatechange = () => {
           console.log("PC state:", pc.connectionState);
-
           if (
             pc.connectionState === "failed" ||
             pc.connectionState === "disconnected" ||
@@ -73,22 +105,63 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           }
         };
 
-        // --- 再接続ロジック ---
+        // --- 再接続ロジック（※ 旧 pc に addTrack していたバグを修正） ---
         const reconnectWebRTC = async () => {
-          try {
-            pc.close();
-          } catch (e) {}
+          try { pc.close(); } catch {}
 
           console.log("♻️ Reconnecting WebRTC...");
 
-          // 新しい PeerConnection を生成しなおす
-          const newPc = new RTCPeerConnection();
-          stream.getTracks().forEach((t) => newPc.addTrack(t, stream));
+          const newPc = new RTCPeerConnection({
+            iceServers: [
+              { urls: "stun:stun.l.google.com:19302" },
+              {
+                urls: "turn:114.69.40.111:3478?transport=udp",
+                username: "streaming",
+                credential: "147d74531ecb2e76afb26a6286ce4579",
+              },
+              {
+                urls: "turns:114.69.40.111:443?transport=tcp",
+                username: "streaming",
+                credential: "147d74531ecb2e76afb26a6286ce4579",
+              },
+            ],
+            iceCandidatePoolSize: 2,
+          });
+
+          // ここで **newPc** に addTrack する（←重要）
+          stream.getTracks().forEach((track) => {
+            const sender = newPc.addTrack(track, stream);
+            if (track.kind === "video") {
+              const params = sender.getParameters();
+              if (!params.encodings) params.encodings = [{}];
+              params.encodings = [
+                { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
+                { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
+                { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
+              ];
+              sender.setParameters(params).catch(() => {});
+            }
+          });
+
+          // 既存のハンドラを移植
+          newPc.oniceconnectionstatechange = pc.oniceconnectionstatechange!;
+          newPc.onconnectionstatechange = pc.onconnectionstatechange!;
+          newPc.ontrack = pc.ontrack!;
+
+          // ICE candidate 送信
+          newPc.onicecandidate = (e) => {
+            if (e.candidate) signaling.send({ event: "candidate", data: e.candidate });
+          };
 
           pc = newPc;
-          signaling.send({ event: "offer" });
+          // 再交渉
+          pc.createOffer().then((offer) => {
+            pc.setLocalDescription(offer);
+            signaling.send({ event: "offer", data: offer });
+          });
         };
-                // ✅ リモート受信
+
+        // ✅ リモート受信
         pc.ontrack = (event) => {
           if (event.track.kind === 'audio') return;
 
@@ -96,12 +169,10 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           const id = `${rStream.id}-${event.track.id}-${Math.random()}`;
 
           setRemoteVideos((prev) => {
-            // 重複防止：同じ MediaStream が既にある場合はスキップ
             if (prev.some((v) => v.stream.id === rStream.id)) return prev;
             return [...prev, { id, stream: rStream }];
           });
 
-          // trackが止まったら消す
           event.track.onended = () => {
             setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
           };
@@ -120,12 +191,14 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           if (e.candidate) signaling.send({ event: 'candidate', data: e.candidate });
         };
 
+        // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
         signaling.connect();
+
         cleanup = () => {
-          signaling.send({ type: "bye" });
-          signaling.close();
-          pc.close();
-          stream.getTracks().forEach((t) => t.stop());
+          try { signaling.send({ type: "bye" }); } catch {}
+          try { signaling.close(); } catch {}
+          try { pc.close(); } catch {}
+          try { stream.getTracks().forEach((t) => t.stop()); } catch {}
         };
       } catch (err) {
         console.error(err);
@@ -163,21 +236,18 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
               <video
                 playsInline
                 autoPlay
-                // 🔑 重要：最初は muted にして自動再生を通す
                 muted
                 className="w-full h-full object-cover"
                 ref={(el) => {
                   if (!el) return;
                   if (el.srcObject !== v.stream) {
                     el.srcObject = v.stream;
-                    // iOS/Chrome対策：loadedmetadata後に play を明示
                     el.onloadedmetadata = () => {
                       el.play().catch(() => {});
                     };
                   }
                 }}
               />
-              {/* クリックでミュート解除（任意） */}
               <button
                 className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
                 onClick={() => {
