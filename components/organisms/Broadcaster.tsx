@@ -22,18 +22,6 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
   const remoteCount = remoteVideos.length;
 
   useEffect(() => {
-    const username = 'streaming'
-    const credential = '147d74531ecb2e76afb26a6286ce4579'
-    const iceServers = [
-      { urls: ['turns:turn.jounetsism.biz:443?transport=tcp'], username, credential },
-      { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
-      { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential }
-    ];
-    const config: RTCConfiguration  = {
-      iceServers,
-      iceTransportPolicy: 'all',
-      iceCandidatePoolSize: 3
-    };
     let cleanup: (() => void) | null = null;
 
     const start = async () => {
@@ -51,96 +39,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
             localVideoRef.current?.play().catch(() => {});
           };
         }
-
-        // ---- 低遅延向け RTCPeerConnection 設定 ----
-        let pc = new RTCPeerConnection(config);
-
-        // ---- シミュルキャスト（低遅延寄り）----
-        stream.getTracks().forEach((track) => {
-          const sender = pc.addTrack(track, stream);
-          if (track.kind === "video") {
-            const params = sender.getParameters();
-            if (!params.encodings) params.encodings = [{}];
-
-            params.encodings = [
-              { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
-              { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
-              { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
-            ];
-
-            sender.setParameters(params).catch((err) => {
-              console.warn("setParameters error:", err);
-            });
-          }
-        });
-
-        // --- WebRTC 切断検知 ---
-        pc.oniceconnectionstatechange = () => {
-          console.log("ICE state:", pc.iceConnectionState);
-          if (
-            pc.iceConnectionState === "disconnected" ||
-            pc.iceConnectionState === "failed"
-          ) {
-            console.warn("🔥 ICE state failed/disconnected — reconnect WebRTC");
-            reconnectWebRTC();
-          }
-        };
-
-        pc.onconnectionstatechange = () => {
-          console.log("PC state:", pc.connectionState);
-          if (
-            pc.connectionState === "failed" ||
-            pc.connectionState === "disconnected" ||
-            pc.connectionState === "closed"
-          ) {
-            console.warn("❌ PeerConnection disconnected — restarting...");
-            reconnectWebRTC();
-          }
-        };
-
-        // --- 再接続ロジック（※ 旧 pc に addTrack していたバグを修正） ---
-        const reconnectWebRTC = async () => {
-          try { pc.close(); } catch {}
-
-          console.log("♻️ Reconnecting WebRTC...");
-
-          const newPc = new RTCPeerConnection(config);
-
-          // ここで **newPc** に addTrack する（←重要）
-          stream.getTracks().forEach((track) => {
-            const sender = newPc.addTrack(track, stream);
-            if (track.kind === "video") {
-              const params = sender.getParameters();
-              if (!params.encodings) params.encodings = [{}];
-              params.encodings = [
-                { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
-                { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
-                { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
-              ];
-              sender.setParameters(params).catch(() => {});
-            }
-          });
-
-          // 既存のハンドラを移植
-          newPc.oniceconnectionstatechange = pc.oniceconnectionstatechange!;
-          newPc.onconnectionstatechange = pc.onconnectionstatechange!;
-          newPc.ontrack = pc.ontrack!;
-
-          // ICE candidate 送信
-          newPc.onicecandidate = (e) => {
-            if (e.candidate) signaling.send({ event: "candidate", data: e.candidate });
-          };
-
-          pc = newPc;
-          // 再交渉
-          pc.createOffer().then((offer) => {
-            pc.setLocalDescription(offer);
-            signaling.send({ event: "offer", data: offer });
-          });
-        };
-
-        // ✅ リモート受信
-        pc.ontrack = (event) => {
+        const onTackEvent = (event: RTCTrackEvent) => {
           if (event.track.kind === 'audio') return;
 
           const rStream = event.streams[0] || new MediaStream([event.track]);
@@ -158,16 +57,12 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
             setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
           };
         };
-
         // ✅ シグナリング
         const signaling = new SignalingClient(
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
-          pc
+          stream,
+          onTackEvent,
         );
-
-        pc.onicecandidate = (e) => {
-          if (e.candidate) signaling.send({ event: 'candidate', data: e.candidate });
-        };
 
         // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
         signaling.connect();
@@ -175,7 +70,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
         cleanup = () => {
           try { signaling.send({ type: "bye" }); } catch {}
           try { signaling.close(); } catch {}
-          try { pc.close(); } catch {}
+          try { signaling.pc.close(); } catch {}
           try { stream.getTracks().forEach((t) => t.stop()); } catch {}
         };
       } catch (err) {
