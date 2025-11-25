@@ -22,26 +22,17 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
   const remoteCount = remoteVideos.length;
 
   useEffect(() => {
-    const connection = (navigator as any).connection || {};
-    const effectiveType = connection.effectiveType; // "wifi", "4g", etc.
-    const isWifi = effectiveType === 'wifi';
     const username = 'streaming'
     const credential = '147d74531ecb2e76afb26a6286ce4579'
-    const iceServers = isWifi
-      ? [
-          { urls: ['turns:turn.jounetsism.biz:443?transport=tcp'], username, credential },
-          { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
-          { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential }
-        ]
-      : [
-          { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential },
-          { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
-          { urls: ['turns:turn.jounetsism.biz:443?transport=tcp'], username, credential }
-        ];
+    const iceServers = [
+      { urls: ['turns:turn.jounetsism.biz:443?transport=tcp'], username, credential },
+      { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
+      { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential }
+    ];
     const config: RTCConfiguration  = {
       iceServers,
-      iceTransportPolicy: isWifi ? 'all' : 'relay',
-      iceCandidatePoolSize: 2
+      iceTransportPolicy: 'all',
+      iceCandidatePoolSize: 3
     };
     let cleanup: (() => void) | null = null;
 
