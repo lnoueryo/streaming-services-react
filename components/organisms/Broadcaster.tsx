@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import output from '@/config';
-import { SignalingClient } from '@/lib/websocket/signaling-client';
+import { BroadcasterClient } from '@/lib/websocket/broadcaster-client';
 
 interface PageProps { id: string; }
 type MessageEventType = 'offer' | 'answer' | 'candidate';
@@ -31,7 +31,6 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           video: true,
           audio: true,
         });
-
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
           // iOS対策：loadedmetadata後に明示再生
@@ -58,10 +57,10 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           };
         };
         // ✅ シグナリング
-        const signaling = new SignalingClient(
+        const signaling = new BroadcasterClient(
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
-          stream,
           onTackEvent,
+          stream,
         );
 
         // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）

@@ -19,79 +19,59 @@ export default function Viewer({ id }: PageProps) {
   const remoteCount = remoteVideos.length;
 
   useEffect(() => {
-    let pc: RTCPeerConnection | null = null;
-    let signaling: SignalingClient | null = null;
+    let cleanup: (() => void) | null = null;
 
-    const addStream = (stream: MediaStream) => {
-      setRemoteVideos((prev) => {
-        if (prev.some((v) => v.stream.id === stream.id)) return prev;
-        return [...prev, { id: `${stream.id}`, stream }];
-      });
-    };
-
-    const removeStream = (id: string) => {
-      setRemoteVideos((prev) => prev.filter((v) => v.id !== id));
-    };
-
-    const startWebRTC = () => {
-      pc = new RTCPeerConnection();
-
-      pc.ontrack = (event) => {
-        if (event.track.kind !== "video") return;
-
-        const stream = event.streams[0] || new MediaStream([event.track]);
-        addStream(stream);
-
-        stream.onremovetrack = () => removeStream(stream.id);
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (
-          pc!.connectionState === "failed" ||
-          pc!.connectionState === "disconnected"
-        ) {
-          console.warn("Viewer WebRTC disconnected — restarting...");
-          restart();
-        }
-      };
-
-      // ---------- Signaling ----------
-      signaling = new SignalingClient(
-        `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
-        pc
-      );
-
-      signaling.connect();
-    };
-
-    const restart = () => {
+    const start = async () => {
       try {
-        signaling?.close();
-        pc?.close();
-      } catch {}
+        const onTackEvent = (event: RTCTrackEvent) => {
+          if (event.track.kind === 'audio') return;
 
-      pc = null;
-      signaling = null;
+          const rStream = event.streams[0] || new MediaStream([event.track]);
+          const id = `${rStream.id}-${event.track.id}-${Math.random()}`;
 
-      setTimeout(() => startWebRTC(), 1000);
+          setRemoteVideos((prev) => {
+            if (prev.some((v) => v.stream.id === rStream.id)) return prev;
+            return [...prev, { id, stream: rStream }];
+          });
+
+          event.track.onended = () => {
+            setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
+          };
+          rStream.onremovetrack = () => {
+            setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
+          };
+        };
+        // ✅ シグナリング
+        const signaling = new SignalingClient(
+          `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
+          onTackEvent,
+        );
+
+        // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
+        signaling.connect();
+
+        cleanup = () => {
+          try { signaling.send({ type: "bye" }); } catch {}
+          try { signaling.close(); } catch {}
+          try { signaling.pc.close(); } catch {}
+        };
+      } catch (err) {
+        console.error(err);
+        alert(err);
+      }
     };
 
-    // start
-    startWebRTC();
-
-    return () => restart();
-  }, [id]);
+    start();
+    return () => { if (cleanup) cleanup(); };
+  }, []);
 
   return (
     <div className="w-full h-screen bg-black overflow-hidden p-2">
       <motion.div
         layout
         className={`
-          grid gap-2 w-full h-full
+          grid gap-2 w-full h-full grid-cols-2 sm:grid-cols-3
 
-          ${remoteCount === 1 ? "grid-cols-1" : ""}
-          ${remoteCount === 2 ? "grid-cols-1 sm:grid-cols-2" : ""}
-          ${remoteCount >= 3 ? "grid-cols-2 sm:grid-cols-3" : ""}
         `}
       >
         <AnimatePresence>

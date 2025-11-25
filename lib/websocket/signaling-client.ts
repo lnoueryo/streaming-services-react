@@ -12,20 +12,17 @@ const config: RTCConfiguration  = {
 };
 export class SignalingClient {
   private url: string;
-  private ws: WebSocket | null = null;
+  protected ws: WebSocket | null = null;
   public pc: RTCPeerConnection;
-  private localStream: MediaStream;
-  private onTrackEvent?: (event: RTCTrackEvent) => void;
-  private reconnectTimer: any = null;
+  private onTrackEvent: (event: RTCTrackEvent) => void;
   private heartbeatTimer: any = null;
   private retry = 0;
   private maxRetry = 20;
 
-  constructor(url: string, localStream: MediaStream, onTrackEvent?: (event: RTCTrackEvent) => void) {
+  constructor(url: string, onTrackEvent: (event: RTCTrackEvent) => void) {
     this.url = url;
-    this.pc = new RTCPeerConnection(config);
-    this.localStream = localStream;
     this.onTrackEvent = onTrackEvent;
+    this.pc = new RTCPeerConnection(config);
   }
 
   connect() {
@@ -70,23 +67,6 @@ export class SignalingClient {
       this.pc = new RTCPeerConnection(config);
     }
     // ---- シミュルキャスト（低遅延寄り）----
-    this.localStream.getTracks().forEach((track) => {
-      const sender = this.pc.addTrack(track, this.localStream);
-      if (track.kind === "video") {
-        const params = sender.getParameters();
-        if (!params.encodings) params.encodings = [{}];
-
-        params.encodings = [
-          { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
-          { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
-          { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
-        ];
-
-        sender.setParameters(params).catch((err) => {
-          console.warn("setParameters error:", err);
-        });
-      }
-    });
     // --- WebRTC 切断検知 ---
     this.pc.oniceconnectionstatechange = () => {
       console.log("ICE state:", this.pc.iceConnectionState);
@@ -110,16 +90,14 @@ export class SignalingClient {
       }
     };
 
-    // ✅ リモート受信
-    if (this.onTrackEvent) {
-      this.pc.ontrack = this.onTrackEvent
-    }
     this.pc.onicecandidate = (e) => {
       if (e.candidate) this.send({ event: 'candidate', data: e.candidate });
     };
+
+    this.pc.ontrack = this.onTrackEvent;
   }
 
-  private reconnect() {
+  protected reconnect() {
     if (this.retry >= this.maxRetry) {
       console.error("WS failed to reconnect.");
       return;
@@ -128,14 +106,14 @@ export class SignalingClient {
     setTimeout(() => this.connect(), 2000);
   }
 
-  private startHeartbeat() {
+  protected startHeartbeat() {
     this.stopHeartbeat();
     this.heartbeatTimer = setInterval(() => {
       this.send({ type: "ping" });
     }, 20000);
   }
 
-  private stopHeartbeat() {
+  protected stopHeartbeat() {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
   }
 
