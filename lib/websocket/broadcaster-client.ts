@@ -53,10 +53,10 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
       this.retry = 0;
 
       // keep-alive
-      // this.startHeartbeat();
+      this.startHeartbeat();
 
       // 最初の offer 要求
-      this.send({ event: "offer" });
+      this.send('offer');
     };
 
     this.ws.onmessage = (ev) => {
@@ -67,7 +67,7 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
         pc.setRemoteDescription(msg.data);
         pc.createAnswer().then((ans) => {
           pc.setLocalDescription(ans);
-          this.send({ event: "answer", data: ans });
+          this.send('answer', ans);
         });
       }
 
@@ -79,7 +79,7 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
     this.ws.onerror = () => {};
     this.ws.onclose = () => {
       console.warn("WS closed, reconnecting...");
-      // this.stopHeartbeat();
+      this.stopHeartbeat();
       this.reconnect();
     };
     // ---- シミュルキャスト（低遅延寄り）----
@@ -102,12 +102,12 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
         pc.connectionState === "closed"
       ) {
         console.warn("❌ PeerConnection disconnected — restarting...");
-        this.send({ event: "offer" });
+        this.send('offer');
       }
     };
 
     pc.onicecandidate = (e) => {
-      if (e.candidate) this.send({ event: 'candidate', data: e.candidate });
+      if (e.candidate) this.send('candidate', e.candidate);
     };
 
     pc.ontrack = this.onTrackEvent;

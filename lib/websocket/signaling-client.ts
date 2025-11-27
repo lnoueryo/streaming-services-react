@@ -13,15 +13,15 @@ export abstract class SignalingClient {
   ) {}
   abstract connect(): void
   abstract reconnect(): void
-  public send(data: any) {
+  public send(event: string, data?: any) {
     try {
-      this.ws?.send(JSON.stringify(data));
+      this.ws?.send(JSON.stringify({ event, data }));
     } catch {}
   }
   protected startHeartbeat() {
     this.stopHeartbeat();
     this.heartbeatTimer = setInterval(() => {
-      this.send({ type: "ping" });
+      this.send('ping');
     }, 20000);
   }
 
