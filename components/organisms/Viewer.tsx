@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import output from "@/config";
 import { SignalingClient } from "@/lib/websocket/signaling-client";
+import { ViewerClient } from "@/lib/websocket/viewer-client";
 
 interface PageProps {
   id: string;
@@ -42,18 +43,17 @@ export default function Viewer({ id }: PageProps) {
           };
         };
         // ✅ シグナリング
-        const signaling = new SignalingClient(
+        const signaling = new ViewerClient(
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
           onTackEvent,
         );
 
         // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
-        signaling.connect();
+        await signaling.connect();
 
         cleanup = () => {
-          try { signaling.send({ type: "bye" }); } catch {}
+          // try { signaling.send({ type: "bye" }); } catch {}
           try { signaling.close(); } catch {}
-          try { signaling.pc.close(); } catch {}
         };
       } catch (err) {
         console.error(err);

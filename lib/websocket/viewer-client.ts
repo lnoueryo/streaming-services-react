@@ -12,7 +12,7 @@ const config: RTCConfiguration  = {
   iceCandidatePoolSize: 3
 };
 
-export class BroadcasterClient extends SignalingClient implements ISignalingClient {
+export class ViewerClient extends SignalingClient implements ISignalingClient {
   private url: string;
   private retry = 0;
   private maxRetry = 20;
@@ -25,27 +25,6 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
   async connect() {
     this.pc?.close();
     const pc = new RTCPeerConnection(config);
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    stream.getTracks().forEach((track) => {
-      const sender = pc?.addTrack(track, stream!);
-      if (track.kind === "video") {
-        const params = sender.getParameters();
-        if (!params.encodings) params.encodings = [{}];
-
-        params.encodings = [
-          { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
-          { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
-          { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
-        ];
-
-        sender.setParameters(params).catch((err) => {
-          console.warn("setParameters error:", err);
-        });
-      }
-    });
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
@@ -112,7 +91,6 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
 
     pc.ontrack = this.onTrackEvent;
     this.pc = pc
-    this.stream = stream
   }
 
   reconnect() {

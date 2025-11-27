@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,17 +27,10 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     const start = async () => {
       try {
         // ✅ ローカル取得
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          // iOS対策：loadedmetadata後に明示再生
-          localVideoRef.current.onloadedmetadata = () => {
-            localVideoRef.current?.play().catch(() => {});
-          };
-        }
+        // const stream = await navigator.mediaDevices.getUserMedia({
+        //   video: true,
+        //   audio: true,
+        // });
         const onTackEvent = (event: RTCTrackEvent) => {
           if (event.track.kind === 'audio') return;
 
@@ -58,19 +51,23 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
         };
         // ✅ シグナリング
         const signaling = new BroadcasterClient(
+          // `${output.websocketApiOrigin}/ws/live/broadcast?userId=${Math.floor(Math.random() * 10000)}`,
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
           onTackEvent,
-          stream,
         );
-
         // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
-        signaling.connect();
-
+        await signaling.connect();
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = signaling.stream;
+          // iOS対策：loadedmetadata後に明示再生
+          localVideoRef.current.onloadedmetadata = () => {
+            localVideoRef.current?.play().catch(() => {});
+          };
+        }
         cleanup = () => {
-          try { signaling.send({ type: "bye" }); } catch {}
+          // try { signaling.send({ type: "bye" }); } catch {}
           try { signaling.close(); } catch {}
-          try { signaling.pc.close(); } catch {}
-          try { stream.getTracks().forEach((t) => t.stop()); } catch {}
+          try { signaling.stream?.getTracks().forEach((t) => t.stop()); } catch {}
         };
       } catch (err) {
         console.error(err);
