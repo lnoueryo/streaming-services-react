@@ -15,6 +15,7 @@ interface RemoteVideoItem {
 }
 
 const Broadcaster: React.FC<PageProps> = ({ id }) => {
+  console.log('Broadcaster component rendered with id:', id);
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideoItem[]>([]);
@@ -71,6 +72,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     };
 
     start();
+    console.log('useEffect finished')
     return () => { if (cleanup) cleanup(); };
   }, []);
 
