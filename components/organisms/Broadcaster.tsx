@@ -27,10 +27,6 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     const start = async () => {
       try {
         // ✅ ローカル取得
-        // const stream = await navigator.mediaDevices.getUserMedia({
-        //   video: true,
-        //   audio: true,
-        // });
         const onTackEvent = (event: RTCTrackEvent) => {
           if (event.track.kind === 'audio') return;
 
@@ -51,7 +47,6 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
         };
         // ✅ シグナリング
         const signaling = new BroadcasterClient(
-          // `${output.websocketApiOrigin}/ws/live/broadcast?userId=${Math.floor(Math.random() * 10000)}`,
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
           onTackEvent,
         );

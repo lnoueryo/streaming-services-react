@@ -55,8 +55,6 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
       // keep-alive
       this.startHeartbeat();
 
-      // 最初の offer 要求
-      this.send('offer');
     };
 
     this.ws.onmessage = (ev) => {
@@ -102,7 +100,7 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
         pc.connectionState === "closed"
       ) {
         console.warn("❌ PeerConnection disconnected — restarting...");
-        this.send('offer');
+        this.reconnect();
       }
     };
 
