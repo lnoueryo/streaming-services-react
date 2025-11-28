@@ -220,7 +220,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
             transition-all
           "
         >
-          <span>切る</span>
+          切る
         </button>
 
         {/* Reconnect */}
@@ -233,7 +233,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
             transition-all
           "
         >
-          <span>再接続</span>
+          再接続
         </button>
       </motion.div>
     </div>
