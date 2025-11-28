@@ -1,6 +1,6 @@
 import { SignalingClient, ISignalingClient } from "./signaling-client";
 const username = 'streaming'
-const credential = '147d74531ecb2e76afb26a6286ce4579'
+const credential = process.env.NEXT_PUBLIC_TURN_SERVER_CREDENTIAL
 const iceServers = [
   { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential },
   { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
