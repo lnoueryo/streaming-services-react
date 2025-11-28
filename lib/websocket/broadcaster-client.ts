@@ -27,11 +27,6 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
     if (this.pc) {
       console.log("%c[PC DESTROY START]", "color:red", performance.now());
 
-      this.pc.getSenders().forEach((s) => {
-        console.log(" stop sender:", s.track?.id);
-        try { s.track?.stop(); } catch {}
-      });
-
       this.pc.oniceconnectionstatechange = null;
       this.pc.onconnectionstatechange = null;
       this.pc.onicecandidate = null;
@@ -51,13 +46,24 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
       const sender = pc?.addTrack(track, stream!);
       if (track.kind === "video") {
         const params = sender.getParameters();
-        if (!params.encodings) params.encodings = [{}];
 
-        params.encodings = [
-          { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
-          { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
-          { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
-        ];
+        // encodings がすでに存在する場合 → 上書きしない
+        if (params.encodings && params.encodings.length > 0) {
+          console.log("Re-use existing encodings:", params.encodings);
+
+          // 変更可能なフィールドだけ書き換える
+          params.encodings.forEach((enc) => {
+            enc.maxBitrate = 800_000; // 変更したい場合だけ
+          });
+
+        } else {
+          // 初回のみ encodings を設定
+          params.encodings = [
+            { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
+            { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
+            { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
+          ];
+        }
 
         sender.setParameters(params).catch((err) => {
           console.warn("setParameters error:", err);
@@ -102,29 +108,23 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
     };
     this.ws.onclose = () => {
       console.log("%c[WS CLOSE]", "color: #4caf50", performance.now(), this.url);
-      this.stopHeartbeat();
-      this.reconnect();
     };
     // ---- シミュルキャスト（低遅延寄り）----
     // --- WebRTC 切断検知 ---
     pc.oniceconnectionstatechange = () => {
       console.log("%c[ICE CONNECTION]", "color: violet", performance.now(), pc.iceConnectionState);
-      if (
-        pc.iceConnectionState === "disconnected" ||
-        pc.iceConnectionState === "failed"
-      ) {
-        console.warn("🔥 ICE state failed/disconnected — reconnect WebRTC");
+
+      if (pc.iceConnectionState === "failed") {
+        console.warn("ICE failed → reconnect()");
+        this.reconnect();
       }
     };
 
     pc.onconnectionstatechange = () => {
       console.log("%c[PC CONNECTION]", "color: yellow", performance.now(), pc.connectionState);
-      if (
-        pc.connectionState === "failed" ||
-        pc.connectionState === "disconnected" ||
-        pc.connectionState === "closed"
-      ) {
-        console.warn("❌ PeerConnection disconnected — restarting...");
+
+      if (pc.connectionState === "failed") {
+        console.warn("❌ PeerConnection failed — restarting...");
         this.reconnect();
       }
     };
@@ -148,25 +148,34 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
     this.stream = stream
   }
 
-reconnect() {
-  if (this.reconnecting) {
-    console.log("%c[RECONNECT SKIPPED — already reconnecting]", "color:gray");
-    return;
+  reconnect() {
+    if (this.reconnecting) {
+      console.log("%c[RECONNECT SKIPPED — already reconnecting]", "color:gray");
+      return;
+    }
+    this.reconnecting = true;
+
+    if (this.retry >= this.maxRetry) {
+      console.error("WS failed to reconnect.");
+      this.reconnecting = false;
+      return;
+    }
+    this.retry++;
+
+    console.log("%c[RECONNECT SCHEDULED]", "color:orange", performance.now());
+
+    setTimeout(async () => {
+      await this.connect();
+      this.reconnecting = false;
+    }, 2000);
   }
-  this.reconnecting = true;
 
-  if (this.retry >= this.maxRetry) {
-    console.error("WS failed to reconnect.");
-    this.reconnecting = false;
-    return;
+  hangUp() {
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => {
+        track.stop();
+      });
+    }
+    this.close()
   }
-  this.retry++;
-
-  console.log("%c[RECONNECT SCHEDULED]", "color:orange", performance.now());
-
-  setTimeout(async () => {
-    await this.connect();
-    this.reconnecting = false;
-  }, 2000);
-}
 }

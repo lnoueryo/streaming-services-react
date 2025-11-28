@@ -7,7 +7,6 @@ import { BroadcasterClient } from '@/lib/websocket/broadcaster-client';
 
 interface PageProps { id: string; }
 type MessageEventType = 'offer' | 'answer' | 'candidate';
-type WSMessage = { event: MessageEventType; data?: any };
 
 interface RemoteVideoItem {
   id: string;
@@ -19,6 +18,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
 
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideoItem[]>([]);
   const [showLocal, setShowLocal] = useState(true);
+  const [signaling, setSignaling] = useState<BroadcasterClient>();
   const remoteCount = remoteVideos.length;
 
   useEffect(() => {
@@ -73,15 +73,8 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
           onTackEvent,
         );
-        // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
-        await signaling.connect();
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = signaling.stream;
-          // iOS対策：loadedmetadata後に明示再生
-          localVideoRef.current.onloadedmetadata = () => {
-            localVideoRef.current?.play().catch(() => {});
-          };
-        }
+        setSignaling(signaling);
+        await connect(signaling);
         cleanup = () => {
           console.log("%c[CLEANUP START]", "color:red", performance.now());
           try { signaling.close(); } catch {}
@@ -97,6 +90,18 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     start();
     return () => { if (cleanup) cleanup(); };
   }, []);
+
+  const connect = async (signaling: BroadcasterClient) => {
+    // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
+    await signaling.connect();
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = signaling.stream;
+      // iOS対策：loadedmetadata後に明示再生
+      localVideoRef.current.onloadedmetadata = () => {
+        localVideoRef.current?.play().catch(() => {});
+      };
+    }
+  }
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
@@ -193,6 +198,44 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           あなたの映像を表示
         </button>
       )}
+      {/* Bottom Control Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="
+          absolute bottom-3 left-1/2 -translate-x-1/2
+          flex items-center gap-3
+          bg-black/40 backdrop-blur-md
+          px-4 py-2 rounded-full shadow-lg
+        "
+      >
+        {/* Hang Up */}
+        <button
+          onClick={async () => await signaling?.hangUp()}
+          className="
+            flex items-center gap-1
+            bg-red-500/80 hover:bg-red-600
+            text-white px-3 py-1.5 rounded-full text-xs
+            transition-all
+          "
+        >
+          <span>切る</span>
+        </button>
+
+        {/* Reconnect */}
+        <button
+          onClick={async () => await connect(signaling!)}
+          className="
+            flex items-center gap-1
+            bg-white/10 hover:bg-white/20
+            text-white px-3 py-1.5 rounded-full text-xs
+            transition-all
+          "
+        >
+          <span>再接続</span>
+        </button>
+      </motion.div>
     </div>
   );
 };
