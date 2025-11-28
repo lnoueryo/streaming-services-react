@@ -17,13 +17,31 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
   private retry = 0;
   private maxRetry = 20;
   public stream: MediaStream | null = null;
+  private reconnecting: boolean = false;
 
   constructor(url: string, onTrackEvent: (event: RTCTrackEvent) => void) {
     super(onTrackEvent)
     this.url = url;
   }
   async connect() {
-    this.pc?.close();
+    if (this.pc) {
+      console.log("%c[PC DESTROY START]", "color:red", performance.now());
+
+      this.pc.getSenders().forEach((s) => {
+        console.log(" stop sender:", s.track?.id);
+        try { s.track?.stop(); } catch {}
+      });
+
+      this.pc.oniceconnectionstatechange = null;
+      this.pc.onconnectionstatechange = null;
+      this.pc.onicecandidate = null;
+      this.pc.ontrack = null;
+      this.pc.onsignalingstatechange = null;
+      this.pc.onicegatheringstatechange = null;
+
+      try { this.pc.close(); } catch {}
+      console.log("%c[PC DESTROY END]", "color:red", performance.now());
+    }
     const pc = new RTCPeerConnection(config);
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
@@ -46,15 +64,20 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
         });
       }
     });
+    if (this.ws) {
+      console.log("%c[WS DESTROY]", "color:red", performance.now());
+      try { this.ws.close(); } catch {}
+      this.ws.onopen = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+      this.ws.onmessage = null;
+      this.ws = null;
+    }
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
-      console.log("WS connected");
+      console.log("%c[WS OPEN]", "color: #4caf50", performance.now(), this.url);
       this.retry = 0;
-
-      // keep-alive
-      this.startHeartbeat();
-
     };
 
     this.ws.onmessage = (ev) => {
@@ -74,16 +97,18 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
       }
     };
 
-    this.ws.onerror = () => {};
+    this.ws.onerror = (err) => {
+      console.log("%c[WS ERROR]", "color: orange", err);
+    };
     this.ws.onclose = () => {
-      console.warn("WS closed, reconnecting...");
+      console.log("%c[WS CLOSE]", "color: #4caf50", performance.now(), this.url);
       this.stopHeartbeat();
       this.reconnect();
     };
     // ---- シミュルキャスト（低遅延寄り）----
     // --- WebRTC 切断検知 ---
     pc.oniceconnectionstatechange = () => {
-      console.log("ICE state:", pc.iceConnectionState);
+      console.log("%c[ICE CONNECTION]", "color: violet", performance.now(), pc.iceConnectionState);
       if (
         pc.iceConnectionState === "disconnected" ||
         pc.iceConnectionState === "failed"
@@ -93,7 +118,7 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
     };
 
     pc.onconnectionstatechange = () => {
-      console.log("PC state:", pc.connectionState);
+      console.log("%c[PC CONNECTION]", "color: yellow", performance.now(), pc.connectionState);
       if (
         pc.connectionState === "failed" ||
         pc.connectionState === "disconnected" ||
@@ -107,18 +132,41 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
     pc.onicecandidate = (e) => {
       if (e.candidate) this.send('candidate', e.candidate);
     };
+    pc.onsignalingstatechange = () => {
+      console.log("%c[SIGNALING]", "color: cyan", performance.now(), pc.signalingState);
+    };
 
-    pc.ontrack = this.onTrackEvent;
+    pc.onicegatheringstatechange = () => {
+      console.log("%c[ICE GATHERING]", "color: purple", performance.now(), pc.iceGatheringState);
+    };
+
+    pc.ontrack = (e) => {
+      console.log("%c[ONTRACK]", "color:#0af", e.track.kind, e.track.id);
+      this.onTrackEvent(e);
+    };
     this.pc = pc
     this.stream = stream
   }
 
-  reconnect() {
-    if (this.retry >= this.maxRetry) {
-      console.error("WS failed to reconnect.");
-      return;
-    }
-    this.retry++;
-    setTimeout(() => this.connect(), 2000);
+reconnect() {
+  if (this.reconnecting) {
+    console.log("%c[RECONNECT SKIPPED — already reconnecting]", "color:gray");
+    return;
   }
+  this.reconnecting = true;
+
+  if (this.retry >= this.maxRetry) {
+    console.error("WS failed to reconnect.");
+    this.reconnecting = false;
+    return;
+  }
+  this.retry++;
+
+  console.log("%c[RECONNECT SCHEDULED]", "color:orange", performance.now());
+
+  setTimeout(async () => {
+    await this.connect();
+    this.reconnecting = false;
+  }, 2000);
+}
 }
