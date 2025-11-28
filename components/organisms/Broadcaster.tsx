@@ -135,6 +135,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
                     el.srcObject = v.stream;
                     el.onloadedmetadata = () => {
                       el.play().catch(() => {});
+                      el.muted = false;
                     };
                   }
                 }}
