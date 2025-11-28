@@ -6,7 +6,6 @@ import output from '@/config';
 import { BroadcasterClient } from '@/lib/websocket/broadcaster-client';
 
 interface PageProps { id: string; }
-type MessageEventType = 'offer' | 'answer' | 'candidate';
 
 interface RemoteVideoItem {
   id: string;
@@ -28,7 +27,6 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
       try {
         // ✅ ローカル取得
         const onTackEvent = (event: RTCTrackEvent) => {
-          // if (event.track.kind === 'audio') return;
           console.log("%c[REMOTE TRACK RECEIVED]",
             "color: #00bcd4",
             event.track.kind,
