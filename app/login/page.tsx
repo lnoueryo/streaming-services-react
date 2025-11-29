@@ -7,13 +7,15 @@ import AuthService from '@/lib/auth/auth.service';
 export default function LoginPage() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') || '/';
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [next, setNext] = useState('/');
 
   useEffect(() => {
+    const next = params.get('next') || '/';
+    setNext(next);
     AuthService.onAuthStateChanged((user) => {
       if (user) {
         router.replace(next);
