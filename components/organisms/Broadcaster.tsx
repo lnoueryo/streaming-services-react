@@ -86,7 +86,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
                 playsInline
                 autoPlay
                 muted
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover scale-x-[-1]"
                 ref={(el) => {
                   if (!el) return;
                   if (el.srcObject !== v.stream) {
@@ -132,7 +132,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           autoPlay
           muted
           playsInline
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover scale-x-[-1]"
         />
         {showLocal && (
           <button
@@ -191,6 +191,17 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           "
         >
           再接続
+        </button>
+        <button
+          onClick={async () => await signaling?.switchCamera()}
+          className="
+            flex items-center gap-1
+            bg-white/10 hover:bg-white/20
+            text-white px-3 py-1.5 rounded-full text-xs
+            transition-all
+          "
+        >
+          切り替え
         </button>
       </motion.div>
     </div>

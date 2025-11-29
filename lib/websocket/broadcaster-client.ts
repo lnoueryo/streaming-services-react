@@ -4,13 +4,19 @@ import { SignalingClient, ISignalingClient } from "./signaling-client";
 
 export class BroadcasterClient extends SignalingClient implements ISignalingClient {
   public stream: MediaStream | null = null;
+  public useFront: boolean = false;
 
   constructor(url: string, setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) {
     super(url, setRemoteVideos)
   }
   async connect() {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
+      video: {
+        facingMode: this.useFront ? "user" : "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30, max: 60 },
+      },
       audio: true,
     });
     await super.connect();
@@ -30,9 +36,9 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
         } else {
           // 初回のみ encodings を設定
           params.encodings = [
-            { rid: "l", scaleResolutionDownBy: 3, maxBitrate: 200_000, maxFramerate: 20 },
-            { rid: "m", scaleResolutionDownBy: 2, maxBitrate: 500_000, maxFramerate: 24 },
-            { rid: "h", scaleResolutionDownBy: 1, maxBitrate: 1_200_000, maxFramerate: 30 },
+            { rid: "f", scaleResolutionDownBy: 1, maxBitrate: 2_500_000 },
+            { rid: "h", scaleResolutionDownBy: 2, maxBitrate: 500_000 },
+            { rid: "q", scaleResolutionDownBy: 4, maxBitrate: 150_000 },
           ];
         }
 
@@ -61,5 +67,26 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
       });
     }
     this.close()
+  }
+
+  async switchCamera() {
+    this.useFront = !this.useFront
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: this.useFront ? "user" : "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 }
+      },
+      audio: false,
+    });
+
+    const newTrack = newStream.getVideoTracks()[0];
+
+    const sender = this.pc?.getSenders().find(s => s.track?.kind === "video");
+    if (sender) {
+      await sender.replaceTrack(newTrack);
+    }
+    this.stream = newStream
   }
 }

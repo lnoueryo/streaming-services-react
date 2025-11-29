@@ -72,7 +72,7 @@ export default function Viewer({ id }: PageProps) {
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover scale-x-[-1]"
                 ref={(el) => {
                   if (el && el.srcObject !== v.stream) {
                     el.srcObject = v.stream;
