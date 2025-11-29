@@ -26,7 +26,9 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
   if (res.status === 401) {
     await AuthService.signOut();
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      const next = window.location.pathname + window.location.search;
+      const nextQuery = buildQuery({ next });
+      window.location.href = `/login${nextQuery}`;
     }
     throw new Error('Unauthorized')
   }

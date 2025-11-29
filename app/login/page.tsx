@@ -1,23 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AuthService from '@/lib/auth/auth.service';
 
 export default function LoginPage() {
   const router = useRouter();
+  const params = useSearchParams();
+  const next = params.get('next') || '/';
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // ⭐ ページに入ったとき既にログイン済みならトップへ飛ばす
   useEffect(() => {
     AuthService.onAuthStateChanged((user) => {
       if (user) {
-        router.replace('/'); // すでに認証済み → ホームへ
+        router.replace(next);
       } else {
-        setChecking(false); // 未ログイン → ログイン画面表示
+        setChecking(false);
       }
     });
   }, [router]);
@@ -34,8 +35,7 @@ export default function LoginPage() {
     try {
       const user = await AuthService.signInWithEmail(email, password);
       console.log('Login OK', user);
-
-      router.push('/');
+      router.push(next);
     } catch (err: any) {
       console.error(err);
       setError('ログインに失敗しました');
@@ -48,8 +48,7 @@ export default function LoginPage() {
     try {
       const user = await AuthService.signInWithGoogle();
       console.log('Google Login OK', user);
-
-      router.push('/');
+      router.push(next);
     } catch (err) {
       console.error(err);
       setError('Googleログインに失敗しました');
