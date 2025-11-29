@@ -19,14 +19,15 @@ export class ViewerClient extends SignalingClient implements ISignalingClient {
     super(url, setRemoteVideos)
   }
   async connect() {
-    super.connect();
+    await super.connect();
   }
 
   reconnect() {
     super.reconnect();
-    setTimeout(() => {
+    console.log("%c[RECONNECT SCHEDULED]", "color:orange", performance.now());
+    setTimeout(async () => {
       console.log("%c[RECONNECTING...]", "color:orange", `${this.retry}/${this.maxRetry}`, performance.now());
-      this.connect();
+      await this.connect();
     }, 1000);
   }
 }

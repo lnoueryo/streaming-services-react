@@ -84,10 +84,16 @@ const firebaseProvider: AuthProvider = {
         idToken: token,
       });
     });
-
-    // ⭐ unsubscribe を返さない（voidとして扱う）
     return;
   },
+  waitAuthReady(): Promise<void> {
+    return new Promise((resolve) => {
+      const unsub = auth.onAuthStateChanged(() => {
+        unsub();
+        resolve();
+      });
+    });
+  }
 };
 
 export default firebaseProvider;

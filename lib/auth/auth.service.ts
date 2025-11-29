@@ -17,6 +17,9 @@ const AuthService = {
   getIdToken: () => provider.getIdToken(),
   onAuthStateChanged(cb: (user: AuthUser | null) => void) {
     return provider.onAuthStateChanged(cb);
+  },
+  waitAuthReady: async() => {
+    await provider.waitAuthReady();
   }
 };
 

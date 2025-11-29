@@ -19,4 +19,5 @@ export interface AuthProvider {
 
   // 🔥 LoginPage のコードと同じ
   onAuthStateChanged(cb: (user: AuthUser | null) => void): void;
+  waitAuthReady(): Promise<void>;
 }

@@ -14,7 +14,14 @@ function buildQuery(params?: Record<string, any>) {
 }
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
-  const res = await fetch(`${output.httpApiOrigin}${url}`, options);
+  await AuthService.waitAuthReady();
+  const res = await fetch(`${output.httpApiOrigin}${url}`, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      authorization: `Bearer ${await AuthService.getIdToken()}`,
+    }
+  });
 
   if (res.status === 401) {
     await AuthService.signOut();

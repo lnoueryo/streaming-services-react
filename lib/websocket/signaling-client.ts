@@ -1,18 +1,12 @@
+import { generateTurnCredential } from "@/repositories/streaming.repository"
+
 export type ISignalingClient = {
   connect: () => void
   reconnect: () => void
   send: (data: any) => void
   close: () => void
 }
-const username = 'streaming'
-const credential = process.env.NEXT_PUBLIC_TURN_SERVER_CREDENTIAL
-const iceServers = [
-  { urls: ['turn:turn.jounetsism.biz:3478?transport=udp'], username, credential },
-  { urls: ['turn:turn.jounetsism.biz:3478?transport=tcp'], username, credential },
-  { urls: ['turns:turn.jounetsism.biz:443?transport=tcp'], username, credential },
-];
 const config: RTCConfiguration  = {
-  iceServers,
   iceTransportPolicy: 'all',
   iceCandidatePoolSize: 3
 };
@@ -23,9 +17,15 @@ export abstract class SignalingClient {
   protected retry = 0;
   protected maxRetry = 20;
   constructor(protected url: string, protected setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) { }
-  protected connect(): void {
+  protected async connect(): Promise<void> {
+    const credential = await this.generateTurnCredential()
+    console.log(credential)
+    this.scheduleTurnRefresh(credential.ttl)
     this.pc?.close();
-    const pc = new RTCPeerConnection(config);
+    const pc = new RTCPeerConnection({
+      ...config,
+      ...credential,
+    });
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
@@ -156,5 +156,16 @@ export abstract class SignalingClient {
       this.ws?.close();
       this.pc?.close();
     } catch {}
+  }
+  private async generateTurnCredential() {
+    const result = await generateTurnCredential()
+    return result
+  }
+  private scheduleTurnRefresh(ttl: number) {
+    const refreshTime = ttl * 0.8 * 1000; // 80%
+    setTimeout(() => {
+      console.log("[TURN REFRESH] refreshing TURN credentials before expiration");
+      this.reconnect(); // ここで新しい TURN 信息を再取得
+    }, refreshTime);
   }
 }

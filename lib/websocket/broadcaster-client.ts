@@ -13,7 +13,7 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
       video: true,
       audio: true,
     });
-    super.connect();
+    await super.connect();
     const pc = this.pc!;
     stream.getTracks().forEach((track) => {
       const sender = pc?.addTrack(track, stream!);
