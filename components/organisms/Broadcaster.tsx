@@ -26,7 +26,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     const start = async () => {
       try {
         const signaling = new BroadcasterClient(
-          `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
+          `${output.websocketApiOrigin}/ws/live/${id}`,
           setRemoteVideos,
         );
         setSignaling(signaling);

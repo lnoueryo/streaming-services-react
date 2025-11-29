@@ -26,7 +26,7 @@ export default function Viewer({ id }: PageProps) {
       try {
         // ✅ シグナリング
         const signaling = new ViewerClient(
-          `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
+          `${output.websocketApiOrigin}/ws/live/${id}`,
           setRemoteVideos,
         );
 

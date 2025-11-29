@@ -1,4 +1,5 @@
 import { generateTurnCredential } from "@/repositories/streaming.repository"
+import AuthService from "../auth/auth.service"
 
 export type ISignalingClient = {
   connect: () => void
@@ -19,14 +20,15 @@ export abstract class SignalingClient {
   constructor(protected url: string, protected setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) { }
   protected async connect(): Promise<void> {
     const credential = await this.generateTurnCredential()
-    console.log(credential)
     this.scheduleTurnRefresh(credential.ttl)
+    const idToken = await AuthService.getIdToken()
     this.pc?.close();
     const pc = new RTCPeerConnection({
       ...config,
       ...credential,
     });
-    this.ws = new WebSocket(this.url);
+    
+    this.ws = new WebSocket(`${this.url}?token=${idToken}`);
 
     this.ws.onopen = () => {
       console.log("%c[WS OPEN]", "color: #4caf50", performance.now(), this.url);
