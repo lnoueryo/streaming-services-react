@@ -4,7 +4,7 @@ import { SignalingClient, ISignalingClient } from "./signaling-client";
 
 export class BroadcasterClient extends SignalingClient implements ISignalingClient {
   public stream: MediaStream | null = null;
-  public useFront: boolean = false;
+  public useFront: boolean = true;
 
   constructor(url: string, setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) {
     super(url, setRemoteVideos)
