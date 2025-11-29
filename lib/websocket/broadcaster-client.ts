@@ -70,7 +70,9 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
   }
 
   async switchCamera() {
-    this.useFront = !this.useFront
+    this.useFront = !this.useFront;
+
+    // 1) 新しいカメラ取得
     const newStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: this.useFront ? "user" : "environment",
@@ -80,13 +82,22 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
       },
       audio: false,
     });
-
     const newTrack = newStream.getVideoTracks()[0];
 
+    // 2) sender の video track を差し替え
     const sender = this.pc?.getSenders().find(s => s.track?.kind === "video");
-    if (sender) {
-      await sender.replaceTrack(newTrack);
+    if (!sender) {
+      console.error("No sender found!");
+      return;
     }
-    this.stream = newStream
+    await sender.replaceTrack(newTrack);
+
+    // 3) 古い track は確実に停止
+    if (this.stream) {
+      this.stream.getVideoTracks().forEach(t => t.stop());
+    }
+
+    // 4) stream を置き換え
+    this.stream = newStream;
   }
 }

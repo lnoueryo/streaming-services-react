@@ -59,6 +59,18 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     }
   }
 
+  const switchCamera = async (signaling: BroadcasterClient) => {
+    // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
+    await signaling.switchCamera();
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = signaling.stream;
+      localVideoRef.current.onloadedmetadata = () => {
+        localVideoRef.current?.play().catch(() => {});
+      };
+      localVideoRef.current.style.transform = signaling.useFront ? "scaleX(-1)" : "scaleX(1)";
+    }
+  }
+
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
       {/* Remote Grid（2人のときは縦並び、それ以降は通常） */}
@@ -193,7 +205,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           再接続
         </button>
         <button
-          onClick={async () => await signaling?.switchCamera()}
+          onClick={async () => await switchCamera(signaling!)}
           className="
             flex items-center gap-1
             bg-white/10 hover:bg-white/20
