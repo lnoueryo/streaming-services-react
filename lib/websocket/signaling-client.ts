@@ -8,9 +8,7 @@ export abstract class SignalingClient {
   protected ws: WebSocket | null = null;
   protected pc: RTCPeerConnection | null = null;
   protected heartbeatTimer: any = null;
-  constructor(
-    protected onTrackEvent: (event: RTCTrackEvent) => void
-  ) {}
+
   abstract connect(): void
   abstract reconnect(): void
   public send(event: string, data?: any) {

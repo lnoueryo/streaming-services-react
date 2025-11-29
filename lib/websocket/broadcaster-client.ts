@@ -1,3 +1,4 @@
+import React from "react";
 import { SignalingClient, ISignalingClient } from "./signaling-client";
 const username = 'streaming'
 const credential = process.env.NEXT_PUBLIC_TURN_SERVER_CREDENTIAL
@@ -13,14 +14,12 @@ const config: RTCConfiguration  = {
 };
 
 export class BroadcasterClient extends SignalingClient implements ISignalingClient {
-  private url: string;
   private retry = 0;
   private maxRetry = 20;
   public stream: MediaStream | null = null;
 
-  constructor(url: string, onTrackEvent: (event: RTCTrackEvent) => void) {
-    super(onTrackEvent)
-    this.url = url;
+  constructor(private url: string, private setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) {
+    super()
   }
   async connect() {
     this.pc?.close();
@@ -117,14 +116,50 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
 
     pc.ontrack = (e) => {
       console.log("%c[ONTRACK]", "color:#0af", e.track.kind, e.track.id);
-      this.onTrackEvent(e);
+      console.log("%c[REMOTE TRACK RECEIVED]",
+        "color: #00bcd4",
+        e.track.kind,
+        e.track.id,
+        performance.now()
+      );
+
+      const rStream = e.streams[0] || new MediaStream([e.track]);
+      const id = `${rStream.id}-${e.track.id}-${Math.random()}`;
+
+      this.setRemoteVideos((prev) => {
+        if (prev.some((v) =>
+            v.stream.id === rStream.id &&
+            v.stream.getTracks().some(t => t.id === e.track.id)
+        )) {
+          return prev;
+        }
+        return [...prev, { id, stream: rStream }];
+      });
+
+      e.track.onended = () => {
+        console.log("%c[REMOTE TRACK ENDED]",
+          "color: #ff7043",
+          e.track.kind,
+          e.track.id,
+          performance.now()
+        );
+        this.setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
+      };
+      rStream.onremovetrack = ({track}) => {
+        console.log("%c[REMOTE REMOVED]",
+          "color: #ff8a65",
+          track.kind,
+          track.id,
+          performance.now()
+        );
+        this.setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
+      };
     };
     this.pc = pc
     this.stream = stream
   }
 
   reconnect() {
-
     if (this.retry >= this.maxRetry) {
       console.error("WS failed to reconnect.");
       return;
@@ -135,6 +170,7 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
 
     setTimeout(async () => {
       console.log("%c[RECONNECTING...]", "color:orange", `${this.retry}/${this.maxRetry}`, performance.now());
+      this.setRemoteVideos([]);
       await this.connect();
     }, 1000);
   }

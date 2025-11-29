@@ -13,14 +13,12 @@ const config: RTCConfiguration  = {
 };
 
 export class ViewerClient extends SignalingClient implements ISignalingClient {
-  private url: string;
   private retry = 0;
   private maxRetry = 20;
   public stream: MediaStream | null = null;
 
-  constructor(url: string, onTrackEvent: (event: RTCTrackEvent) => void) {
-    super(onTrackEvent)
-    this.url = url;
+  constructor(private url: string, private setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) {
+    super()
   }
   async connect() {
     this.pc?.close();
@@ -89,7 +87,47 @@ export class ViewerClient extends SignalingClient implements ISignalingClient {
       if (e.candidate) this.send('candidate', e.candidate);
     };
 
-    pc.ontrack = this.onTrackEvent;
+    pc.ontrack = (e) => {
+      console.log("%c[ONTRACK]", "color:#0af", e.track.kind, e.track.id);
+      console.log("%c[REMOTE TRACK RECEIVED]",
+        "color: #00bcd4",
+        e.track.kind,
+        e.track.id,
+        performance.now()
+      );
+
+      const rStream = e.streams[0] || new MediaStream([e.track]);
+      const id = `${rStream.id}-${e.track.id}-${Math.random()}`;
+
+      this.setRemoteVideos((prev) => {
+        if (prev.some((v) =>
+            v.stream.id === rStream.id &&
+            v.stream.getTracks().some(t => t.id === e.track.id)
+        )) {
+          return prev;
+        }
+        return [...prev, { id, stream: rStream }];
+      });
+
+      e.track.onended = () => {
+        console.log("%c[REMOTE TRACK ENDED]",
+          "color: #ff7043",
+          e.track.kind,
+          e.track.id,
+          performance.now()
+        );
+        this.setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
+      };
+      rStream.onremovetrack = ({track}) => {
+        console.log("%c[REMOTE REMOVED]",
+          "color: #ff8a65",
+          track.kind,
+          track.id,
+          performance.now()
+        );
+        this.setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
+      };
+    };
     this.pc = pc
   }
 

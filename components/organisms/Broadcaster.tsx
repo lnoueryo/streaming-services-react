@@ -26,50 +26,10 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     const start = async () => {
       try {
         // ✅ ローカル取得
-        const onTackEvent = (event: RTCTrackEvent) => {
-          console.log("%c[REMOTE TRACK RECEIVED]",
-            "color: #00bcd4",
-            event.track.kind,
-            event.track.id,
-            performance.now()
-          );
-
-          const rStream = event.streams[0] || new MediaStream([event.track]);
-          const id = `${rStream.id}-${event.track.id}-${Math.random()}`;
-
-          setRemoteVideos((prev) => {
-            if (prev.some((v) =>
-                v.stream.id === rStream.id &&
-                v.stream.getTracks().some(t => t.id === event.track.id)
-            )) {
-              return prev;
-            }
-            return [...prev, { id, stream: rStream }];
-          });
-
-          event.track.onended = () => {
-            console.log("%c[REMOTE TRACK ENDED]",
-              "color: #ff7043",
-              event.track.kind,
-              event.track.id,
-              performance.now()
-            );
-            setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
-          };
-          rStream.onremovetrack = ({track}) => {
-            console.log("%c[REMOTE REMOVED]",
-              "color: #ff8a65",
-              track.kind,
-              track.id,
-              performance.now()
-            );
-            setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
-          };
-        };
         // ✅ シグナリング
         const signaling = new BroadcasterClient(
           `${output.websocketApiOrigin}/ws/live/${id}/${Math.floor(Math.random() * 10000)}`,
-          onTackEvent,
+          setRemoteVideos,
         );
         setSignaling(signaling);
         await connect(signaling);
