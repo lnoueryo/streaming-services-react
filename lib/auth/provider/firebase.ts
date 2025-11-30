@@ -6,7 +6,7 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  onAuthStateChanged as fbOnAuthStateChanged,
+  onAuthStateChanged,
 } from 'firebase/auth';
 
 import type { AuthProvider, AuthUser } from '../types';
@@ -71,20 +71,17 @@ const firebaseProvider: AuthProvider = {
     const user = auth.currentUser;
     return user ? user.getIdToken() : null;
   },
-
-  // ⭐ あなたの LoginPage のコードに完全対応
   onAuthStateChanged(cb) {
-    fbOnAuthStateChanged(auth, async (user) => {
+    return onAuthStateChanged(auth, (user) => {
       if (!user) return cb(null);
-
-      const token = await user.getIdToken();
-      cb({
-        uid: user.uid,
-        email: user.email,
-        idToken: token,
-      });
+      cb({ id: user.uid, email: user.email });
     });
-    return;
+  },
+
+  getCurrentUser() {
+    const user = auth.currentUser;
+    if (!user) return null;
+    return { id: user.uid, email: user.email };
   },
   waitAuthReady(): Promise<void> {
     return new Promise((resolve) => {

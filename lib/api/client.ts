@@ -14,7 +14,6 @@ function buildQuery(params?: Record<string, any>) {
 }
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
-  await AuthService.waitAuthReady();
   const res = await fetch(`${output.httpApiOrigin}${url}`, {
     ...options,
     headers: {

@@ -16,8 +16,9 @@ export interface AuthProvider {
   signUpWithEmail(email: string, password: string): Promise<AuthUser>;
   signOut(): Promise<void>;
   getIdToken(): Promise<string | null>;
-
-  // 🔥 LoginPage のコードと同じ
-  onAuthStateChanged(cb: (user: AuthUser | null) => void): void;
+  onAuthStateChanged(
+    cb: (user: { id: string; email: string | null } | null) => void
+  ): () => void;
+  getCurrentUser(): { id: string; email: string | null } | null;
   waitAuthReady(): Promise<void>;
 }

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import output from "@/config";
-import { SignalingClient } from "@/lib/websocket/signaling-client";
 import { ViewerClient } from "@/lib/websocket/viewer-client";
 
 interface PageProps {

@@ -15,12 +15,9 @@ const AuthService = {
 
   signOut: () => provider.signOut(),
   getIdToken: () => provider.getIdToken(),
-  onAuthStateChanged(cb: (user: AuthUser | null) => void) {
-    return provider.onAuthStateChanged(cb);
-  },
-  waitAuthReady: async() => {
-    await provider.waitAuthReady();
-  }
+  onAuthStateChanged: (cb: (user: any) => void) => provider.onAuthStateChanged(cb),
+  getCurrentUser: () => provider.getCurrentUser(),
+  waitAuthReady: async() => await provider.waitAuthReady(),
 };
 
 export default AuthService;

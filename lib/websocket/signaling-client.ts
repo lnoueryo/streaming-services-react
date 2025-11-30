@@ -149,7 +149,6 @@ export abstract class SignalingClient {
       this.send('ping');
     }, 20000);
   }
-
   protected stopHeartbeat() {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
   }
