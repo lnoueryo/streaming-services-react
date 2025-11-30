@@ -2,6 +2,23 @@
 import output from '@/config';
 import AuthService from '@/lib/auth/auth.service';
 
+export type ApiErrorBody = {
+  statusCode: number;
+  errorCode?: string;
+  message?: string;
+}
+
+export class ApiFetchError extends Error {
+  public statusCode: number;
+  public errorCode?: string;
+
+  constructor({ statusCode, message, errorCode}: ApiErrorBody) {
+    super(message);
+    this.statusCode = statusCode;
+    this.errorCode = errorCode
+  }
+}
+
 function buildQuery(params?: Record<string, any>) {
   if (!params) return '';
   const q = new URLSearchParams();
@@ -22,14 +39,17 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
     }
   });
 
-  if (res.status === 401) {
-    await AuthService.signOut();
-    if (typeof window !== 'undefined') {
-      const next = window.location.pathname + window.location.search;
-      const nextQuery = buildQuery({ next });
-      window.location.href = `/login${nextQuery}`;
+  if (res.status >= 400) {
+    if (res.status === 401) {
+      await AuthService.signOut();
+      if (typeof window !== 'undefined') {
+        const next = window.location.pathname + window.location.search;
+        const nextQuery = buildQuery({ next });
+        window.location.href = `/login${nextQuery}`;
+      }
     }
-    throw new Error('Unauthorized')
+    const data = await res.json()
+    throw new ApiFetchError(data)
   }
 
   return res;

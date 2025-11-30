@@ -1,12 +1,17 @@
 import { api } from '@/lib/api/client';
 
 export async function fetchPublicRooms(params: { page: number, limit: number }): Promise<Rooms> {
-  const res = await api.get('/rooms/public', params)
+  const res = await api.get(`/rooms/public`, params)
+  return await res.json();
+}
+
+export async function checkRoomJoinable(id: string): Promise<Rooms> {
+  const res = await api.get(`/rooms/${id}/join`)
   return await res.json();
 }
 
 export async function createRoom(): Promise<Room> {
-  const res =  await api.post('/rooms/create', {});
+  const res =  await api.post(`/rooms/create`, {});
   return await res.json();
 }
 
