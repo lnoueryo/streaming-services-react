@@ -27,7 +27,7 @@ export abstract class SignalingClient {
       ...config,
       ...credential,
     });
-    
+
     this.ws = new WebSocket(`${this.url}?token=${idToken}`);
 
     this.ws.onopen = () => {

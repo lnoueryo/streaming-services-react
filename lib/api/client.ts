@@ -1,6 +1,7 @@
 // lib/api.ts
 import output from '@/config';
 import AuthService from '@/lib/auth/auth.service';
+import { AuthError } from '../auth/auth-error';
 
 export type ApiErrorBody = {
   statusCode: number;
@@ -31,28 +32,42 @@ function buildQuery(params?: Record<string, any>) {
 }
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
-  const res = await fetch(`${output.httpApiOrigin}${url}`, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      authorization: `Bearer ${await AuthService.getIdToken()}`,
-    }
-  });
+  try {
+    const token = await AuthService.getIdToken()
+    const res = await fetch(`${output.httpApiOrigin}${url}`, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        authorization: `Bearer ${token}`,
+      }
+    });
 
-  if (res.status >= 400) {
-    if (res.status === 401) {
-      await AuthService.signOut();
-      if (typeof window !== 'undefined') {
-        const next = window.location.pathname + window.location.search;
-        const nextQuery = buildQuery({ next });
-        window.location.href = `/login${nextQuery}`;
+    if (res.status >= 400) {
+      if (res.status === 401) {
+        await goToLoginPage()
+      }
+      const data = await res.json()
+      throw new ApiFetchError(data)
+    }
+    return res;
+
+  } catch (error) {
+    if (error instanceof AuthError) {
+      if (error.statusCode === 401) {
+        await goToLoginPage()
       }
     }
-    const data = await res.json()
-    throw new ApiFetchError(data)
+    throw error
   }
+}
 
-  return res;
+const goToLoginPage = async () => {
+  await AuthService.signOut();
+  if (typeof window !== 'undefined') {
+    const next = window.location.pathname + window.location.search;
+    const nextQuery = buildQuery({ next });
+    window.location.href = `/login${nextQuery}`;
+  }
 }
 
 export const api = {

@@ -3,23 +3,23 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthService from '@/lib/auth/auth.service';
-import { fetchPublicRooms } from '@/repositories/room.repository';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [checked, setChecked] = useState(false);
+  const [ok, setOk] = useState(false);
+
   useEffect(() => {
-    const unsub = AuthService.onAuthStateChanged(async(user) => {
+    const unsub = AuthService.onAuthStateChanged(user => {
       if (!user) {
-        router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+        router.replace(`/login?next=${window.location.pathname}`);
       } else {
-        setChecked(true);
+        setOk(true);
       }
     });
+
     return () => unsub();
   }, []);
 
-  if (!checked) return null; // チェック中は描画しない
-
+  if (!ok) return null;
   return <>{children}</>;
 }

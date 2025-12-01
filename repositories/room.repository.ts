@@ -5,8 +5,13 @@ export async function fetchPublicRooms(params: { page: number, limit: number }):
   return await res.json();
 }
 
-export async function checkRoomJoinable(id: string): Promise<Rooms> {
-  const res = await api.get(`/rooms/${id}/join`)
+export async function joinRoom(id: string): Promise<Rooms> {
+  const res = await api.put(`/rooms/${id}/join`)
+  return await res.json();
+}
+
+export async function rejoinRoom(id: string): Promise<Rooms> {
+  const res = await api.put(`/rooms/${id}/join/replace`)
   return await res.json();
 }
 

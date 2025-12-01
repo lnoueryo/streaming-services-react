@@ -20,5 +20,4 @@ export interface AuthProvider {
     cb: (user: { id: string; email: string | null } | null) => void
   ): () => void;
   getCurrentUser(): { id: string; email: string | null } | null;
-  waitAuthReady(): Promise<void>;
 }

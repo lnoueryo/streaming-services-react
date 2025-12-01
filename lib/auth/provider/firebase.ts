@@ -1,5 +1,5 @@
 // auth/provider/firebase.ts
-import { initializeApp } from 'firebase/app';
+import { initializeApp, FirebaseError } from 'firebase/app';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 
 import type { AuthProvider, AuthUser } from '../types';
+import { AuthError, AuthErrorInfo } from '../auth-error';
 
 // ------------ Initialize Firebase --------------
 const firebaseConfig = {
@@ -26,50 +27,130 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const google = new GoogleAuthProvider();
 
-// ------------ Implementation -------------------
+export const firebaseAuthErrorMap: Record<string, AuthErrorInfo> = {
+  'auth/invalid-email': {
+    statusCode: 400,
+    message: 'メールアドレスの形式が正しくありません',
+  },
+  'auth/wrong-password': {
+    statusCode: 401,
+    message: 'メールアドレスまたはパスワードが正しくありません',
+  },
+  'auth/user-not-found': {
+    statusCode: 404,
+    message: 'ユーザーが見つかりません',
+  },
+  'auth/id-token-expired': {
+    statusCode: 401,
+    message: '認証の有効期限が切れています。再度ログインしてください',
+  },
+  'auth/too-many-requests': {
+    statusCode: 429,
+    message: '試行回数が多すぎます。しばらく経ってから再試行してください',
+  },
+  'auth/internal-error': {
+    statusCode: 500,
+    message: 'サーバーでエラーが発生しました。時間をおいて再度お試しください',
+  },
+  'auth/email-already-in-use': {
+    statusCode: 409,
+    message: 'このメールアドレスは既に使用されています',
+  },
+  'auth/weak-password': {
+    statusCode: 400,
+    message: 'パスワードはもっと強固にしてください（6文字以上など）',
+  },
+};
+
+const unknownError = {
+  statusCode: 500,
+  message: 'サーバーでエラーが発生しました。時間をおいて再度お試しください',
+}
+
 const firebaseProvider: AuthProvider = {
-  async signInWithGoogle() {
-    const res = await signInWithPopup(auth, google);
-    const token = await res.user.getIdToken();
-
-    return {
-      uid: res.user.uid,
-      email: res.user.email,
-      displayName: res.user.displayName,
-      photoURL: res.user.photoURL,
-      idToken: token,
-    };
+  async signInWithGoogle(): Promise<AuthUser> {
+    try {
+      const res = await signInWithPopup(auth, google);
+      const token = await res.user.getIdToken();
+      return { uid: res.user.uid, email: res.user.email, displayName: res.user.displayName, photoURL: res.user.photoURL, idToken: token };
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        const error = firebaseAuthErrorMap[err.code]
+        if (!error) {
+          throw new AuthError(unknownError)
+        }
+        throw new AuthError(error);
+      }
+      throw err
+    }
   },
 
-  async signInWithEmail(email, password) {
-    const res = await signInWithEmailAndPassword(auth, email, password);
-    const token = await res.user.getIdToken();
-
-    return {
-      uid: res.user.uid,
-      email: res.user.email,
-      idToken: token,
-    };
+  async signInWithEmail(email: string, password: string): Promise<AuthUser> {
+    try {
+      const res = await signInWithEmailAndPassword(auth, email, password);
+      const token = await res.user.getIdToken();
+      return { uid: res.user.uid, email: res.user.email, idToken: token };
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        const error = firebaseAuthErrorMap[err.code]
+        if (!error) {
+          throw new AuthError(unknownError)
+        }
+        throw new AuthError(error);
+      }
+      throw err
+    }
   },
 
-  async signUpWithEmail(email, password) {
-    const res = await createUserWithEmailAndPassword(auth, email, password);
-    const token = await res.user.getIdToken();
-
-    return {
-      uid: res.user.uid,
-      email: res.user.email,
-      idToken: token,
-    };
+  async signUpWithEmail(email: string, password: string): Promise<AuthUser> {
+    try {
+      const res = await createUserWithEmailAndPassword(auth, email, password);
+      const token = await res.user.getIdToken();
+      return { uid: res.user.uid, email: res.user.email, idToken: token };
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        const error = firebaseAuthErrorMap[err.code]
+        if (!error) {
+          throw new AuthError(unknownError)
+        }
+        throw new AuthError(error);
+      }
+      throw err
+    }
   },
 
-  async signOut() {
-    await auth.signOut();
+  async signOut(): Promise<void> {
+    try {
+      await auth.signOut();
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        const error = firebaseAuthErrorMap[err.code]
+        if (!error) {
+          throw new AuthError(unknownError)
+        }
+        throw new AuthError(error);
+      }
+      throw err
+    }
   },
 
-  async getIdToken() {
-    const user = auth.currentUser;
-    return user ? user.getIdToken() : null;
+  async getIdToken(): Promise<string | null> {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new AuthError({ statusCode: 401, message: "ユーザーが認証されていません。ログインしてください。" })
+      }
+      return await user.getIdToken();
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        const error = firebaseAuthErrorMap[err.code]
+        if (!error) {
+          throw new AuthError(unknownError)
+        }
+        throw new AuthError(error);
+      }
+      throw err
+    }
   },
   onAuthStateChanged(cb) {
     return onAuthStateChanged(auth, (user) => {
@@ -83,14 +164,6 @@ const firebaseProvider: AuthProvider = {
     if (!user) return null;
     return { id: user.uid, email: user.email };
   },
-  waitAuthReady(): Promise<void> {
-    return new Promise((resolve) => {
-      const unsub = auth.onAuthStateChanged(() => {
-        unsub();
-        resolve();
-      });
-    });
-  }
 };
 
 export default firebaseProvider;
