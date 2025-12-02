@@ -17,6 +17,7 @@ export abstract class SignalingClient {
   protected heartbeatTimer: any = null;
   protected retry = 0;
   protected maxRetry = 20;
+  protected customMessageHandlers: Record<string, () => void> = {};
   constructor(protected url: string, protected setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) { }
   protected async connect(): Promise<void> {
     const credential = await this.generateTurnCredential()
@@ -50,6 +51,8 @@ export abstract class SignalingClient {
       if (msg.event === "candidate") {
         pc.addIceCandidate(new RTCIceCandidate(msg.data));
       }
+      const handler = this.customMessageHandlers[msg.event]
+      if (!!handler) handler()
     };
 
     this.ws.onerror = (err) => {
@@ -137,6 +140,7 @@ export abstract class SignalingClient {
       return;
     }
     this.retry++;
+    this.setRemoteVideos([]);
   }
   public send(event: string, data?: any) {
     try {

@@ -8,6 +8,7 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
 
   constructor(url: string, setRemoteVideos: React.Dispatch<React.SetStateAction<{ id: string; stream: MediaStream; }[]>>) {
     super(url, setRemoteVideos)
+    this.customMessageHandlers['close'] = this.hangUp.bind(this)
   }
   async connect() {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -55,7 +56,6 @@ export class BroadcasterClient extends SignalingClient implements ISignalingClie
     console.log("%c[RECONNECT SCHEDULED]", "color:orange", performance.now());
     setTimeout(async () => {
       console.log("%c[RECONNECTING...]", "color:orange", `${this.retry}/${this.maxRetry}`, performance.now());
-      this.setRemoteVideos([]);
       await this.connect();
     }, 1000);
   }
