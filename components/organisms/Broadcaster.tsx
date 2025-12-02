@@ -3,21 +3,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import output from '@/config';
-import { BroadcasterClient } from '@/lib/websocket/broadcaster-client';
-
+import { useBroadcaster } from '@/hooks/use-broadcaster';
 interface PageProps { id: string; }
-
-interface RemoteVideoItem {
-  id: string;
-  stream: MediaStream;
-}
 
 const Broadcaster: React.FC<PageProps> = ({ id }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
-
-  const [remoteVideos, setRemoteVideos] = useState<RemoteVideoItem[]>([]);
+  // const [remoteVideos, setRemoteVideos] = useState<RemoteVideoItem[]>([]);
   const [showLocal, setShowLocal] = useState(true);
-  const [signaling, setSignaling] = useState<BroadcasterClient>();
+  const {
+    stream,
+    isFrontCam,
+    remoteVideos,
+    isConnected,
+    connect,
+    hangUp,
+    switchCam,
+  } = useBroadcaster(`${output.websocketApiOrigin}/ws/live/${id}`);
   const remoteCount = remoteVideos.length;
 
   useEffect(() => {
@@ -25,16 +26,10 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
 
     const start = async () => {
       try {
-        const signaling = new BroadcasterClient(
-          `${output.websocketApiOrigin}/ws/live/${id}`,
-          setRemoteVideos,
-        );
-        setSignaling(signaling);
-        await connect(signaling);
+        await connectSignalingServer();
         cleanup = () => {
           console.log("%c[CLEANUP START]", "color:red", performance.now());
-          try { signaling.close(); } catch {}
-          try { signaling.stream?.getTracks().forEach((t) => t.stop()); } catch {}
+          try { hangUp(); } catch {}
           console.log("%c[CLEANUP END]", "color:red", performance.now());
         };
       } catch (err) {
@@ -46,10 +41,10 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     start();
     return () => { if (cleanup) cleanup(); };
   }, []);
-  const connect = async (signaling: BroadcasterClient) => {
-    await signaling.connect();
+  const connectSignalingServer = async () => {
+    await connect();
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject = signaling.stream;
+      localVideoRef.current.srcObject = stream.current;
       // iOS対策：loadedmetadata後に明示再生
       localVideoRef.current.onloadedmetadata = () => {
         localVideoRef.current?.play().catch(() => {});
@@ -57,18 +52,16 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     }
   }
 
-  const switchCamera = async (signaling: BroadcasterClient) => {
-    await signaling.switchCamera();
+  const switchCamera = async () => {
+    await switchCam();
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject = signaling.stream;
+      console.log(stream.current?.id)
+      localVideoRef.current.srcObject = stream.current;
       localVideoRef.current.onloadedmetadata = () => {
         localVideoRef.current?.play().catch(() => {});
       };
-      localVideoRef.current.style.transform = signaling.useFront ? "scaleX(-1)" : "scaleX(1)";
+      console.log(localVideoRef.current.srcObject)
     }
-  }
-  const hangUp = async (signaling: BroadcasterClient) => {
-    await signaling?.hangUp()
   }
 
   return (
@@ -155,7 +148,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           </button>
         )}
         <p className="text-[10px] text-white/70 absolute bottom-0 w-full text-center bg-black/30">
-          あなたの映像
+          あなたの映像{stream.current?.id}
         </p>
       </div>
 
@@ -181,11 +174,11 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
       >
       {
         // signalingClientの接続状態で分岐
-        true &&
+        isConnected &&
         (
           <>
             <button
-              onClick={async() => await hangUp(signaling!)}
+              onClick={async() => await hangUp()}
               className="
                 flex items-center gap-1
                 bg-red-500/80 hover:bg-red-600
@@ -196,7 +189,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
               切る
             </button>
             <button
-              onClick={async () => await switchCamera(signaling!)}
+              onClick={async () => await switchCamera()}
               className="
                 flex items-center gap-1
                 bg-white/10 hover:bg-white/20
@@ -210,7 +203,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
         ) || (
           <>
             <button
-              onClick={async () => await connect(signaling!)}
+              onClick={() => window.location.reload()}
               className="
                 flex items-center gap-1
                 bg-white/10 hover:bg-white/20
