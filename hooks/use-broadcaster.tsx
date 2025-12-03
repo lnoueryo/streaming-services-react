@@ -61,7 +61,6 @@ export function useBroadcaster(url: string) {
         });
       }
     });
-    // stream.current = newStream
   }
 
   const reconnect = () => {

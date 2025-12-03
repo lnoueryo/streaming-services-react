@@ -8,7 +8,6 @@ interface PageProps { id: string; }
 
 const Broadcaster: React.FC<PageProps> = ({ id }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  // const [remoteVideos, setRemoteVideos] = useState<RemoteVideoItem[]>([]);
   const [showLocal, setShowLocal] = useState(true);
   const {
     stream,
@@ -148,7 +147,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           </button>
         )}
         <p className="text-[10px] text-white/70 absolute bottom-0 w-full text-center bg-black/30">
-          あなたの映像{stream.current?.id}
+          あなたの映像
         </p>
       </div>
 

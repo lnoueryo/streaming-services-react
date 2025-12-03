@@ -1,9 +1,10 @@
 "use client";
-
+// TODO Viewerのカスタムフック作成
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import output from "@/config";
 import { ViewerClient } from "@/lib/websocket/viewer-client";
+import { useViewer } from "@/hooks/use-viewer";
 
 interface PageProps {
   id: string;
@@ -15,26 +16,22 @@ interface RemoteVideoItem {
 }
 
 export default function Viewer({ id }: PageProps) {
-  const [remoteVideos, setRemoteVideos] = useState<RemoteVideoItem[]>([]);
-  const remoteCount = remoteVideos.length;
-
+  const {
+    remoteVideos,
+    connect,
+    close,
+  } = useViewer(`${output.websocketApiOrigin}/ws/live/${id}/viewer`);
   useEffect(() => {
     let cleanup: (() => void) | null = null;
 
     const start = async () => {
       try {
-        // ✅ シグナリング
-        const signaling = new ViewerClient(
-          `${output.websocketApiOrigin}/ws/live/${id}`,
-          setRemoteVideos,
-        );
 
         // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
-        await signaling.connect();
+        await connect();
         cleanup = () => {
           console.log("%c[CLEANUP START]", "color:red", performance.now());
-          try { signaling.close(); } catch {}
-          try { signaling.stream?.getTracks().forEach((t) => t.stop()); } catch {}
+          try { close(); } catch {}
           console.log("%c[CLEANUP END]", "color:red", performance.now());
         };
       } catch (err) {
