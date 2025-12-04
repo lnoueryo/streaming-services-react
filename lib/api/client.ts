@@ -31,35 +31,6 @@ function buildQuery(params?: Record<string, any>) {
   return `?${q.toString()}`;
 }
 
-export async function apiFetch(url: string, options: RequestInit = {}) {
-  try {
-    const token = await AuthService.getIdToken()
-    const res = await fetch(`${output.httpApiOrigin}${url}`, {
-      ...options,
-      headers: {
-        ...(options.headers || {}),
-        authorization: `Bearer ${token}`,
-      }
-    });
-
-    if (res.status >= 400) {
-      if (res.status === 401) {
-        await goToLoginPage()
-      }
-      const data = await res.json()
-      throw new ApiFetchError(data)
-    }
-    return res;
-
-  } catch (error) {
-    if (error instanceof AuthError) {
-      if (error.statusCode === 401) {
-        await goToLoginPage()
-      }
-    }
-    throw error
-  }
-}
 
 const goToLoginPage = async () => {
   await AuthService.signOut();
@@ -70,28 +41,62 @@ const goToLoginPage = async () => {
   }
 }
 
-export const api = {
-  get: (url: string, params?: Record<string, any>) =>
-    apiFetch(`${url}${buildQuery(params)}`, {
+export class Client {
+  constructor(private baseUrl: string) {}
+  get(url: string, params?: Record<string, any>) {
+    return this.apiFetch(`${url}${buildQuery(params)}`, {
       method: 'GET',
-    }),
+    })
+  }
 
-  post: (url: string, body?: any) =>
-    apiFetch(url, {
+  post(url: string, body?: any) {
+    return this.apiFetch(url, {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }),
+    })
+  }
 
-  put: (url: string, body?: any) =>
-    apiFetch(url, {
+  put(url: string, body?: any) {
+    return this.apiFetch(url, {
       method: 'PUT',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }),
+    })
+  }
 
-  delete: (url: string) =>
-    apiFetch(url, {
+  delete(url: string) {
+    this.apiFetch(url, {
       method: 'DELETE',
-    }),
+    })
+  }
+  private async apiFetch(url: string, options: RequestInit = {}) {
+    try {
+      const token = await AuthService.getIdToken()
+      const res = await fetch(`${this.baseUrl}${url}`, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          authorization: `Bearer ${token}`,
+        }
+      });
+
+      if (res.status >= 400) {
+        if (res.status === 401) {
+          await goToLoginPage()
+        }
+        const data = await res.json()
+        throw new ApiFetchError(data)
+      }
+      return res;
+
+    } catch (error) {
+      if (error instanceof AuthError) {
+        if (error.statusCode === 401) {
+          await goToLoginPage()
+        }
+      }
+      throw error
+    }
+  }
 };

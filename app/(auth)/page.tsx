@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthService from '@/lib/auth/auth.service';
 import type { AuthUser } from '@/lib/auth/types';
-import { createRoom } from '@/repositories/room.repository';
+import { roomRepository } from '@/repositories/room.repository';
 
 export default function HomePage() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function HomePage() {
   }
 
   const handleCreateRoom = async () => {
-    const room = await createRoom()
+    const room = await roomRepository.createRoom()
     router.push(`/room/${room.id}`);
   };
 

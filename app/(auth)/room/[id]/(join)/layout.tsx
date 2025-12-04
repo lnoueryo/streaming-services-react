@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound, useParams, useRouter } from 'next/navigation';
-import { joinRoom, rejoinRoom } from '@/repositories/room.repository';
+import { notFound, useParams } from 'next/navigation';
+import { roomRepository } from '@/repositories/room.repository';
 import { ApiFetchError } from '@/lib/api/client';
 
 export default function RoomAuthLayout({ children }: { children: React.ReactNode, params: { id: string } }) {
@@ -14,7 +14,7 @@ export default function RoomAuthLayout({ children }: { children: React.ReactNode
     const start = async () => {
       try {
         const id = String(params.id)
-        const room = await joinRoom(id)
+        const room = await roomRepository.joinRoom(id)
         setChecked(true)
       } catch (error) {
         if (error instanceof ApiFetchError) {
@@ -25,7 +25,7 @@ export default function RoomAuthLayout({ children }: { children: React.ReactNode
             const ok = confirm('別の端末で既に参加しているようです。こちらの端末に切り替えますか。')
             if (ok) {
               try {
-                await rejoinRoom(id)
+                await roomRepository.rejoinRoom(id)
                 setChecked(true)
               } catch (error) {
                 if (error instanceof ApiFetchError) {

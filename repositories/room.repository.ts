@@ -1,24 +1,5 @@
-import { api } from '@/lib/api/client';
-
-export async function fetchPublicRooms(params: { page: number, limit: number }): Promise<Rooms> {
-  const res = await api.get(`/rooms/public`, params)
-  return await res.json();
-}
-
-export async function joinRoom(id: string): Promise<Rooms> {
-  const res = await api.put(`/rooms/${id}/join`)
-  return await res.json();
-}
-
-export async function rejoinRoom(id: string): Promise<Rooms> {
-  const res = await api.put(`/rooms/${id}/join/replace`)
-  return await res.json();
-}
-
-export async function createRoom(): Promise<Room> {
-  const res =  await api.post(`/rooms/create`, {});
-  return await res.json();
-}
+import { backendApi } from '@/lib/api/backend-api';
+import { Client } from '@/lib/api/client';
 
 export type Room = {
   id: string
@@ -32,3 +13,28 @@ export type Rooms = {
     total: number
     totalPages: number
 }
+
+class RoomRepository {
+  constructor(private client: Client) {}
+  public async fetchPublicRooms(params: { page: number, limit: number }): Promise<Rooms> {
+    const res = await this.client.get(`/rooms/public`, params)
+    return await res.json();
+  }
+
+  public async joinRoom(id: string): Promise<Rooms> {
+    const res = await this.client.put(`/rooms/${id}/join`)
+    return await res.json();
+  }
+
+  public async rejoinRoom(id: string): Promise<Rooms> {
+    const res = await this.client.put(`/rooms/${id}/join/replace`)
+    return await res.json();
+  }
+
+  public async createRoom(): Promise<Room> {
+    const res =  await this.client.post(`/rooms/create`, {});
+    return await res.json();
+  }
+}
+
+export const roomRepository = new RoomRepository(backendApi)
