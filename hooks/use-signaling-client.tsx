@@ -1,4 +1,4 @@
-import { signalingRepository } from "@/repositories/signaling.repository"
+import { signalingRepositoryClient } from "@/lib/repositories/client/signaling.repository.client"
 import AuthService from "../lib/auth/auth.service"
 import { useRef, useState } from "react"
 
@@ -29,7 +29,7 @@ export function useSignalingClient(url: string) {
   const customMessageHandlers = useRef<Record<string, () => void>>({})
 
   const connect = async() => {
-    const credential = await signalingRepository.generateTurnCredential()
+    const credential = await signalingRepositoryClient.generateTurnCredential()
     scheduleTurnRefresh(credential.ttl)
     const idToken = await AuthService.getIdToken()
     pc.current?.close();

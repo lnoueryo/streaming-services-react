@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthService from '@/lib/auth/auth.service';
 import type { AuthUser } from '@/lib/auth/types';
-import { roomRepository } from '@/repositories/room.repository';
+import { roomRepositoryClient } from '@/lib/repositories/client/room.repository.client';
+import { authRepositoryClient } from '@/lib/repositories/client/auth.repository.client';
 
 export default function HomePage() {
   const router = useRouter();
@@ -28,12 +29,13 @@ export default function HomePage() {
   }
 
   const handleCreateRoom = async () => {
-    const room = await roomRepository.createRoom()
+    const room = await roomRepositoryClient.createRoom()
     router.push(`/room/${room.id}`);
   };
 
   const handleLogout = async () => {
     await AuthService.signOut();
+    await authRepositoryClient.logout()
     router.replace('/login');
   };
 

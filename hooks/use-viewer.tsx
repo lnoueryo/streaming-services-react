@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useSignalingClient } from "./use-signaling-client";
 
 export function useViewer(url: string) {

@@ -1,9 +1,8 @@
 "use client";
 // TODO Viewerのカスタムフック作成
-import React, { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import output from "@/config";
-import { ViewerClient } from "@/lib/websocket/viewer-client";
 import { useViewer } from "@/hooks/use-viewer";
 
 interface PageProps {
@@ -20,7 +19,7 @@ export default function Viewer({ id }: PageProps) {
     remoteVideos,
     connect,
     close,
-  } = useViewer(`${output.websocketApiOrigin}/ws/live/${id}/viewer`);
+  } = useViewer(`${output.signalingOrigin}/ws/live/${id}/viewer`);
   useEffect(() => {
     let cleanup: (() => void) | null = null;
 

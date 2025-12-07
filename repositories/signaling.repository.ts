@@ -1,5 +1,4 @@
-import { Client } from '@/lib/api/client';
-import { signalingApi } from '@/lib/api/signaling-api';
+import { BaseClient } from '@/lib/api/base-client/base-client';
 
 export type TurnCredential = {
   username: string
@@ -8,12 +7,10 @@ export type TurnCredential = {
   urls: string[]
 }
 
-class SignalingRepository {
-  constructor(private client: Client) {}
+export class SignalingRepository {
+  constructor(private client: BaseClient) {}
   public async generateTurnCredential(): Promise<TurnCredential> {
     const res =  await this.client.post('/streaming/turn/generate');
     return await res.json();
   }
 }
-
-export const signalingRepository = new SignalingRepository(signalingApi)

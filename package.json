@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0 --experimental-https",
+    "dev": "next dev --hostname 0.0.0.0 -p 3000",
+    "dev:ssl": "next dev --hostname 0.0.0.0 --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -11,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.936.0",
     "firebase": "^12.6.0",
+    "firebase-admin": "^13.6.0",
     "framer-motion": "^12.23.24",
     "next": "16.0.1",
     "react": "19.2.0",

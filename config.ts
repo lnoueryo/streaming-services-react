@@ -6,20 +6,29 @@ const config: Config = {
 }
 type ConfigEnv = {
   streamingApiFrontendOrigin: string
-  streamingBackendApiOrigin: string
+  streamingBackendApiOrigin: {
+    client: string
+    server: string
+  }
   signalingOrigin: string
 }
 type STAGE = 'development' | 'production'
 
 const configEnvs: { [K in STAGE]: ConfigEnv } = {
   development: {
-    streamingApiFrontendOrigin: 'http://localhost:3000',
-    streamingBackendApiOrigin: 'http://localhost:3001',
+    streamingApiFrontendOrigin: 'http://streaming.localtest.me',
+    streamingBackendApiOrigin: {
+      client: 'http://streaming-api.localtest.me',
+      server: 'http://streaming-backend:4000',
+    },
     signalingOrigin: 'ws://localhost:8080',
   },
   production: {
     streamingApiFrontendOrigin: 'https://streaming.jounetsism.biz',
-    streamingBackendApiOrigin: 'https://streaming-api.jounetsism.biz',
+    streamingBackendApiOrigin: {
+      client: 'https://streaming-api.jounetsism.biz',
+      server: 'http://streaming-backend',
+    },
     signalingOrigin: 'wss://streaming-signaling.jounetsism.biz',
   },
 }

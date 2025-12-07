@@ -1,18 +1,15 @@
-import { Client } from "@/lib/api/client";
-import { frontendApi } from "@/lib/api/frontend-api";
+import { BaseClient } from "@/lib/api/base-client/base-client";
 
-class AuthRepository {
-  constructor(private client: Client) {}
-  public async login(idToken: string) {
+export class AuthRepository {
+  constructor(private client: BaseClient) {}
+  public async login(token: string) {
     const res = await this.client.post("/api/login", {
-      token: JSON.stringify({ idToken })
+      token,
     });
     return await res.json()
   }
 
-  public async logout(idToken: string) {
-    const res = await this.client.post("/api/logout");
-
+  public async logout() {
+    await this.client.post("/api/logout");
   }  
 }
-export const authRepository = new AuthRepository(frontendApi)

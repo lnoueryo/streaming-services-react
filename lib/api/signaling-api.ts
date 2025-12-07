@@ -1,4 +1,4 @@
 import output from "@/config";
-import { Client } from "./client";
+import { BaseClient } from "./base-client/base-client";
 
-export const signalingApi = new Client(output.signalingOrigin)
+// export const signalingApi = new BaseClient(output.signalingOrigin)

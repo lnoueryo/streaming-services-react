@@ -1,30 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthService from '@/lib/auth/auth.service';
+import { authRepositoryClient } from '@/lib/repositories/client/auth.repository.client';
 
 export default function Login({ next }: { next: string }) {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  useEffect(() => {
-    AuthService.onAuthStateChanged((user) => {
-      if (user) {
-        router.replace(next);
-      } else {
-        setChecking(false);
-      }
-    });
-  }, [router, next]);
+  // useEffect(() => {
+  //   AuthService.onAuthStateChanged((user) => {
+  //     if (user) {
+  //       router.replace(next);
+  //     } else {
+  //       setChecking(false);
+  //     }
+  //   });
+  // }, [router, next]);
 
   // ⭐ 認証状態チェック中なら一瞬ローディング
-  if (checking) {
-    return <div className="text-center mt-20">Loading...</div>;
-  }
+  // if (checking) {
+  //   return <div className="text-center mt-20">Loading...</div>;
+  // }
 
   const handleEmailLogin = async (e: any) => {
     e.preventDefault();
@@ -45,6 +45,7 @@ export default function Login({ next }: { next: string }) {
 
     try {
       const user = await AuthService.signInWithGoogle();
+      await authRepositoryClient.login(user.idToken)
       console.log('Google Login OK', user);
       router.push(next);
     } catch (err) {

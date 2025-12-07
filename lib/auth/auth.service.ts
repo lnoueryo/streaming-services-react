@@ -17,7 +17,6 @@ const AuthService = {
   getIdToken: () => provider.getIdToken(),
   onAuthStateChanged: (cb: (user: any) => void) => provider.onAuthStateChanged(cb),
   getCurrentUser: () => provider.getCurrentUser(),
-  waitAuthReady: async() => await provider.waitAuthReady(),
 };
 
 export default AuthService;

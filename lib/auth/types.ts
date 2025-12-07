@@ -6,7 +6,7 @@ export type AuthUser = {
   email: string | null;
   displayName?: string | null;
   photoURL?: string | null;
-  idToken?: string;
+  idToken: string;
 };
 
 // 認証プロバイダのインターフェース

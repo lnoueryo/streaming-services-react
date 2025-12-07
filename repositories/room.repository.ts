@@ -1,5 +1,4 @@
-import { backendApi } from '@/lib/api/backend-api';
-import { Client } from '@/lib/api/client';
+import { BaseClient } from '@/lib/api/base-client/base-client';
 
 export type Room = {
   id: string
@@ -14,8 +13,8 @@ export type Rooms = {
     totalPages: number
 }
 
-class RoomRepository {
-  constructor(private client: Client) {}
+export class RoomRepository {
+  constructor(private client: BaseClient) {}
   public async fetchPublicRooms(params: { page: number, limit: number }): Promise<Rooms> {
     const res = await this.client.get(`/rooms/public`, params)
     return await res.json();
@@ -36,5 +35,3 @@ class RoomRepository {
     return await res.json();
   }
 }
-
-export const roomRepository = new RoomRepository(backendApi)

@@ -17,7 +17,7 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
     connect,
     hangUp,
     switchCam,
-  } = useBroadcaster(`${output.websocketApiOrigin}/ws/live/${id}`);
+  } = useBroadcaster(`${output.signalingOrigin}/ws/live/${id}`);
   const remoteCount = remoteVideos.length;
 
   useEffect(() => {
