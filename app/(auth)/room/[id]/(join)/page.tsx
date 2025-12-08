@@ -1,11 +1,5 @@
-import Broadcaster from "@/components/organisms/Broadcaster";
+import Lobby from "@/components/templates/room/Lobby";
 
-
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function Page({ params }: PageProps) {
-  const { id } = await params
-  return <Broadcaster id={id} />;
+export default function Page() {
+  return <Lobby />;
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/server/auth/firebase-admin";
 
 export async function GET(req: Request) {
-   return NextResponse.json({ data: 'Hello World' }, { status: 200 });
+  return NextResponse.json({ data: 'Hello World' }, { status: 200 });
 }
 
 export async function POST(req: Request) {
@@ -22,17 +22,11 @@ export async function POST(req: Request) {
     const res = NextResponse.json({ ok: true });
 
     res.cookies.set("session", sessionCookie, {
-      // httpOnly: true,
-      // secure: true,
-      // sameSite: "none",   // subdomain 間で共有するなら none を指定
-      // domain: "localhost",
-      // path: "/",
-      // maxAge: expiresIn / 1000,
       httpOnly: true,
-      // secure: true,        ← ローカルでは不要または false
-      sameSite: "lax",       // or "none" + secure but secure=offならブラウザが拒否する可能性
+      secure: true,
+      sameSite: "none",
+      domain: "localtest.me",
       path: "/",
-      // domain を指定しない（デフォルトで host-only cookie にする）
       maxAge: expiresIn / 1000,
     });
 

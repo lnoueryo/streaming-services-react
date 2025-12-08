@@ -6,10 +6,10 @@ export class AuthRepository {
     const res = await this.client.post("/api/login", {
       token,
     });
-    return await res.json()
+    return res && await res.json()
   }
 
   public async logout() {
     await this.client.post("/api/logout");
-  }  
+  }
 }

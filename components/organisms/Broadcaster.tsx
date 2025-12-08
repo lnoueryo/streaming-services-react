@@ -1,65 +1,50 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, {  RefObject, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import output from '@/config';
-import { useBroadcaster } from '@/hooks/use-broadcaster';
-interface PageProps { id: string; }
+import { RemoteVideoItem } from '@/hooks/use-signaling-client';
+interface PageProps {
+  remoteVideos: RemoteVideoItem[]
+  stream: RefObject<MediaStream | null>
+  switchCam: () => Promise<void>
+  hangUpAndLeave: () => void
+}
 
-const Broadcaster: React.FC<PageProps> = ({ id }) => {
+const Broadcaster: React.FC<PageProps> = ({
+  remoteVideos,
+  stream,
+  switchCam,
+  hangUpAndLeave,
+}) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const [showLocal, setShowLocal] = useState(true);
-  const {
-    stream,
-    isFrontCam,
-    remoteVideos,
-    isConnected,
-    connect,
-    hangUp,
-    switchCam,
-  } = useBroadcaster(`${output.signalingOrigin}/ws/live/${id}`);
   const remoteCount = remoteVideos.length;
 
   useEffect(() => {
-    let cleanup: (() => void) | null = null;
 
     const start = async () => {
-      try {
-        await connectSignalingServer();
-        cleanup = () => {
-          console.log("%c[CLEANUP START]", "color:red", performance.now());
-          try { hangUp(); } catch {}
-          console.log("%c[CLEANUP END]", "color:red", performance.now());
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream.current;
+        localVideoRef.current.onloadedmetadata = () => {
+          localVideoRef.current?.play().catch(() => {});
         };
-      } catch (err) {
-        console.error(err);
-        alert(err);
       }
     };
 
     start();
-    return () => { if (cleanup) cleanup(); };
   }, []);
-  const connectSignalingServer = async () => {
-    await connect();
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream.current;
-      // iOS対策：loadedmetadata後に明示再生
-      localVideoRef.current.onloadedmetadata = () => {
-        localVideoRef.current?.play().catch(() => {});
-      };
-    }
+
+  const hangUp = async () => {
+    await hangUpAndLeave()
   }
 
   const switchCamera = async () => {
     await switchCam();
     if (localVideoRef.current) {
-      console.log(stream.current?.id)
       localVideoRef.current.srcObject = stream.current;
       localVideoRef.current.onloadedmetadata = () => {
         localVideoRef.current?.play().catch(() => {});
       };
-      console.log(localVideoRef.current.srcObject)
     }
   }
 
@@ -171,50 +156,30 @@ const Broadcaster: React.FC<PageProps> = ({ id }) => {
           px-4 py-2 rounded-full shadow-lg
         "
       >
-      {
-        // signalingClientの接続状態で分岐
-        isConnected &&
-        (
-          <>
-            <button
-              onClick={async() => await hangUp()}
-              className="
-                flex items-center gap-1
-                bg-red-500/80 hover:bg-red-600
-                text-white px-3 py-1.5 rounded-full text-xs
-                transition-all
-              "
-            >
-              切る
-            </button>
-            <button
-              onClick={async () => await switchCamera()}
-              className="
-                flex items-center gap-1
-                bg-white/10 hover:bg-white/20
-                text-white px-3 py-1.5 rounded-full text-xs
-                transition-all
-              "
-            >
-              切り替え
-            </button>
-          </>
-        ) || (
-          <>
-            <button
-              onClick={() => window.location.reload()}
-              className="
-                flex items-center gap-1
-                bg-white/10 hover:bg-white/20
-                text-white px-3 py-1.5 rounded-full text-xs
-                transition-all
-              "
-            >
-              再接続
-            </button>
-          </>
-        )
-      }
+        <>
+          <button
+            onClick={async() => await hangUp()}
+            className="
+              flex items-center gap-1
+              bg-red-500/80 hover:bg-red-600
+              text-white px-3 py-1.5 rounded-full text-xs
+              transition-all
+            "
+          >
+            切る
+          </button>
+          <button
+            onClick={async () => await switchCamera()}
+            className="
+              flex items-center gap-1
+              bg-white/10 hover:bg-white/20
+              text-white px-3 py-1.5 rounded-full text-xs
+              transition-all
+            "
+          >
+            切り替え
+          </button>
+        </>
       </motion.div>
     </div>
   );

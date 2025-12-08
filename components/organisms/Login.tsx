@@ -11,28 +11,12 @@ export default function Login({ next }: { next: string }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // useEffect(() => {
-  //   AuthService.onAuthStateChanged((user) => {
-  //     if (user) {
-  //       router.replace(next);
-  //     } else {
-  //       setChecking(false);
-  //     }
-  //   });
-  // }, [router, next]);
-
-  // ⭐ 認証状態チェック中なら一瞬ローディング
-  // if (checking) {
-  //   return <div className="text-center mt-20">Loading...</div>;
-  // }
-
   const handleEmailLogin = async (e: any) => {
     e.preventDefault();
     setError('');
 
     try {
       const user = await AuthService.signInWithEmail(email, password);
-      console.log('Login OK', user);
       router.push(next);
     } catch (err: any) {
       console.error(err);

@@ -16,12 +16,12 @@ type STAGE = 'development' | 'production'
 
 const configEnvs: { [K in STAGE]: ConfigEnv } = {
   development: {
-    streamingApiFrontendOrigin: 'http://streaming.localtest.me',
+    streamingApiFrontendOrigin: 'https://streaming.localtest.me',
     streamingBackendApiOrigin: {
-      client: 'http://streaming-api.localtest.me',
+      client: 'https://streaming-api.localtest.me',
       server: 'http://streaming-backend:4000',
     },
-    signalingOrigin: 'ws://localhost:8080',
+    signalingOrigin: 'wss://streaming-signaling.localtest.me',
   },
   production: {
     streamingApiFrontendOrigin: 'https://streaming.jounetsism.biz',

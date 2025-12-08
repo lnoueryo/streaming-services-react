@@ -9,11 +9,6 @@ interface PageProps {
   id: string;
 }
 
-interface RemoteVideoItem {
-  id: string;
-  stream: MediaStream;
-}
-
 export default function Viewer({ id }: PageProps) {
   const {
     remoteVideos,

@@ -1,40 +1,18 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AuthService from '@/lib/auth/auth.service';
-import type { AuthUser } from '@/lib/auth/types';
+'use client'
 import { roomRepositoryClient } from '@/lib/repositories/client/room.repository.client';
 import { authRepositoryClient } from '@/lib/repositories/client/auth.repository.client';
 
+import { useUser } from './user-provider';
+import { useRouter } from 'next/navigation';
 export default function HomePage() {
-  const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [checking, setChecking] = useState(true);
-
-  // 🔐 認証チェック（未ログイン → /login）
-  useEffect(() => {
-    AuthService.onAuthStateChanged(async (u: AuthUser | null) => {
-      if (!u) {
-        router.replace('/login');
-      } else {
-        setUser(u);
-        setChecking(false);
-      }
-    });
-  }, [router]);
-
-  if (checking) {
-    return <div className="text-center mt-20">Loading...</div>;
-  }
-
+  const user = useUser();
+  const router = useRouter()
   const handleCreateRoom = async () => {
     const room = await roomRepositoryClient.createRoom()
     router.push(`/room/${room.id}`);
   };
 
   const handleLogout = async () => {
-    await AuthService.signOut();
     await authRepositoryClient.logout()
     router.replace('/login');
   };
@@ -45,7 +23,7 @@ export default function HomePage() {
         <h1 className="text-2xl font-bold">ホーム</h1>
 
         <p className="text-gray-700">
-          ログイン中：{user?.email || 'No email'}
+          ログイン中：{user.name} {user.email || 'No email'}
         </p>
 
         <button

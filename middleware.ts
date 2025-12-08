@@ -7,7 +7,6 @@ export function middleware(req: NextRequest) {
   if (session) {
     return NextResponse.next();
   }
-
   const url = req.nextUrl;
   const next = url.pathname + (url.search || '');
 

@@ -1,5 +1,4 @@
 import { signalingRepositoryClient } from "@/lib/repositories/client/signaling.repository.client"
-import AuthService from "../lib/auth/auth.service"
 import { useRef, useState } from "react"
 
 export type ISignalingClient = {
@@ -13,7 +12,7 @@ const config: RTCConfiguration  = {
   iceCandidatePoolSize: 3
 };
 
-type RemoteVideoItem = {
+export type RemoteVideoItem = {
   id: string;
   stream: MediaStream;
 }
@@ -31,14 +30,13 @@ export function useSignalingClient(url: string) {
   const connect = async() => {
     const credential = await signalingRepositoryClient.generateTurnCredential()
     scheduleTurnRefresh(credential.ttl)
-    const idToken = await AuthService.getIdToken()
     pc.current?.close();
     const newPc = new RTCPeerConnection({
       ...config,
       ...credential,
     });
 
-    const newWs = new WebSocket(`${url}?token=${idToken}`)
+    const newWs = new WebSocket(url)
 
     newWs.onopen = () => {
       console.log("%c[WS OPEN]", "color: #4caf50", performance.now(), url);
