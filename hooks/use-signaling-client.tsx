@@ -26,7 +26,8 @@ export function useSignalingClient(url: string) {
   const retry = useRef(0);
   const maxRetry = 20;
   const customMessageHandlers = useRef<Record<string, () => void>>({})
-
+  const queue = useRef<{ offer: RTCSessionDescriptionInit | null, candidates: RTCIceCandidate[]}>({ offer: null, candidates: [] })
+  const stream = useRef<MediaStream | null>(null)
   const connect = async() => {
     const credential = await signalingRepositoryClient.generateTurnCredential()
     scheduleTurnRefresh(credential.ttl)
@@ -48,6 +49,10 @@ export function useSignalingClient(url: string) {
       if (!msg.event) return;
 
       if (msg.event === "offer") {
+        if (!pc.current) {
+          queue.current.offer = msg.data
+          return
+        }
         newPc.setRemoteDescription(msg.data);
         newPc.createAnswer().then((ans) => {
           newPc.setLocalDescription(ans);
@@ -56,6 +61,10 @@ export function useSignalingClient(url: string) {
       }
 
       if (msg.event === "candidate") {
+        if (!pc.current) {
+          queue.current.candidates.push(new RTCIceCandidate(msg.data))
+          return
+        }
         newPc.addIceCandidate(new RTCIceCandidate(msg.data));
       }
       const handler = customMessageHandlers.current[msg.event]
@@ -69,6 +78,52 @@ export function useSignalingClient(url: string) {
       console.log("%c[WS CLOSE]", "color: #4caf50", performance.now(), url);
     };
 
+    ws.current = newWs
+  }
+
+  const connectPeer = async() => {
+    const credential = await signalingRepositoryClient.generateTurnCredential()
+    scheduleTurnRefresh(credential.ttl)
+    pc.current?.close();
+    stream.current = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30, max: 60 },
+      },
+      audio: true,
+    });
+    const newPc = new RTCPeerConnection({
+      ...config,
+      ...credential,
+    });
+    stream.current.getTracks().forEach((track) => {
+      const sender = newPc.addTrack(track, stream.current!);
+      if (track.kind === "video") {
+        const params = sender.getParameters();
+
+        if (params.encodings && params.encodings.length > 0) {
+          console.log("Re-use existing encodings:", params.encodings);
+
+          params.encodings.forEach((enc) => {
+            enc.maxBitrate = 800_000; // 変更したい場合だけ
+          });
+
+        } else {
+          // 初回のみ encodings を設定
+          params.encodings = [
+            { rid: "f", scaleResolutionDownBy: 1, maxBitrate: 2_500_000 },
+            { rid: "h", scaleResolutionDownBy: 2, maxBitrate: 500_000 },
+            { rid: "q", scaleResolutionDownBy: 4, maxBitrate: 150_000 },
+          ];
+        }
+
+        sender.setParameters(params).catch((err) => {
+          console.warn("setParameters error:", err);
+        });
+      }
+    });
     newPc.oniceconnectionstatechange = () => {
       console.log("%c[ICE CONNECTION]", "color: violet", performance.now(), newPc.iceConnectionState);
 
@@ -139,7 +194,19 @@ export function useSignalingClient(url: string) {
         setRemoteVideos((prev) => prev.filter((v) => v.stream.id !== rStream.id));
       };
     };
-    ws.current = newWs
+    if (queue.current.offer) {
+        await newPc.setRemoteDescription(queue.current.offer);
+        const ans = await newPc.createAnswer()
+        newPc.setLocalDescription(ans);
+        send('answer', ans);
+        queue.current.offer = null;
+    }
+    if (queue.current.candidates.length > 0) {
+      for (const c of queue.current.candidates) {
+        await newPc.addIceCandidate(new RTCIceCandidate(c));
+      }
+      queue.current.candidates = [];
+    }
     pc.current = newPc
   }
   const reconnect = () => {
@@ -188,8 +255,10 @@ export function useSignalingClient(url: string) {
     maxRetry,
     isConnected,
     customMessageHandlers,
+    stream,
     connect,
     reconnect,
+    connectPeer,
     send,
     close,
     setIsConnected,

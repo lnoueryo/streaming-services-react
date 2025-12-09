@@ -20,6 +20,7 @@ export default function Lobby() {
     remoteVideos,
     isConnected,
     connect,
+    connectPeer,
     hangUp,
     switchCam,
   } = useBroadcaster(`${output.signalingOrigin}/ws/live/${lobby.id}`);
@@ -70,6 +71,7 @@ export default function Lobby() {
       if (!isConnected) {
         await connect()
       }
+      await connectPeer()
       setIsInRoom(true)
     } catch (error) {
       if (error instanceof ApiFetchError) {
