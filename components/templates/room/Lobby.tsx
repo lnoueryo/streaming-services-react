@@ -5,31 +5,36 @@ import { ApiFetchError } from "@/lib/api/base-client/base-client";
 import { roomRepositoryClient } from "@/lib/repositories/client/room.repository.client";
 import { useEffect, useState } from "react";
 import output from '@/config';
-import { useBroadcaster } from "@/hooks/use-broadcaster";
+import useBroadcaster from "@/hooks/use-signaling";
 import Modal from "@/components/atoms/modal";
+import { useUser } from "@/app/(auth)/user-provider";
 
 export default function Lobby() {
   // TODO Objectを元に409の処理
   const lobbyRes = useLobby()
+  const userRes = useUser()
   const [lobby, setLobby] = useState(lobbyRes)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(false);
   const [isInRoom, setIsInRoom] = useState(false);
+  const [rejoinModalFunc, setRejoinModalFunc] = useState<(next?: () => void) => Promise<void>>(async () => {});
   const {
-    stream,
-    isFrontCam,
     remoteVideos,
-    isConnected,
-    connect,
+    localStreamRef,
+    customMessageHandlers,
+    startCamera,
+    connectWS,
     connectPeer,
     hangUp,
-    switchCam,
+    isWSConnected,
   } = useBroadcaster(`${output.signalingOrigin}/ws/live/${lobby.id}`);
 
-  useEffect(() => {
-    window.addEventListener('beforeunload', function (event) {
-      try { hangUp(); } catch {}
-    });
-  })
+  customMessageHandlers.current['access'] = (users) => {
+    const newLobby = {
+      ...lobby,
+      users,
+    }
+    setLobby(newLobby)
+  }
 
   useEffect(() => {
     let cleanup: (() => void) | null = null;
@@ -42,12 +47,13 @@ export default function Lobby() {
           console.log("%c[CLEANUP END]", "color:red", performance.now());
         };
         if (lobby.isJoined) {
+          setRejoinModalFunc(async () => await rejoin())
           setIsOpenRejoinConfirmation(true)
         }
-        await connect();
+        await connectWS();
       } catch (err) {
         console.error(err);
-        alert(err);
+        // alert(err);
       }
     };
 
@@ -62,21 +68,23 @@ export default function Lobby() {
     };
   }, [lobby.isJoined])
   const joinRoom = async () => {
-    // 入室可能か確認
-    // 問題なければルーム画面に切り替え
-    // 既に他のデバイスで入室していればモーダル表示
     try {
-      // const lobbyRes = await roomRepositoryClient.enterLobby(lobby.id)
-      // setLobby(lobbyRes)
-      if (!isConnected) {
-        await connect()
+      const lobbyRes = await roomRepositoryClient.enterLobby(lobby.id)
+      setLobby(lobbyRes)
+      if (!isWSConnected()) {
+        await connectWS()
       }
+      await startCamera()
       await connectPeer()
       setIsInRoom(true)
     } catch (error) {
       if (error instanceof ApiFetchError) {
         if (error.statusCode === 409) {
-          setIsOpenRejoinConfirmation
+          setRejoinModalFunc(async () => {
+            await rejoin(connectPeer)
+            setIsInRoom(true)
+          })
+          setIsOpenRejoinConfirmation(true)
         }
         console.warn(error)
         return
@@ -86,11 +94,11 @@ export default function Lobby() {
       setIsOpenRejoinConfirmation(false);
     }
   }
-  const rejoin = async () => {
+  const rejoin = async (func = () => {}) => {
     try {
       await Promise.all([
         roomRepositoryClient.rejoinRoom(lobby.id),
-        connect()
+        func()
       ])
     } catch (error) {
       if (error instanceof ApiFetchError) {
@@ -106,6 +114,7 @@ export default function Lobby() {
     await hangUp()
     setIsInRoom(false)
   }
+  const switchCam = async () => {}
   return (
     <>
       {
@@ -114,8 +123,8 @@ export default function Lobby() {
           Broadcaster
             {...{
               remoteVideos,
-              connect,
-              stream,
+              connectWS,
+              stream: localStreamRef,
               switchCam,
               hangUpAndLeave,
             }}
@@ -128,7 +137,7 @@ export default function Lobby() {
             </h2>
 
             <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
-              {lobbyRes.users.map((user) => (
+              {lobby.users.map((user) => (
                 <li
                   key={user.id}
                   className="flex items-center gap-3 bg-gray-700 px-3 py-2 rounded-lg"
