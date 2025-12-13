@@ -4,7 +4,7 @@ import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/atoms/modal'
-import { useSignaling } from './signaling-provider'
+import { useSignaling } from '../signaling-provider'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/app/(auth)/user-provider'
 
