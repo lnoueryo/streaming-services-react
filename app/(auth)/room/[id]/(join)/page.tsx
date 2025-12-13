@@ -9,26 +9,31 @@ import { useLobby } from "./lobby-provider";
 import { useUser } from "@/app/(auth)/user-provider";
 import { roomRepositoryClient } from "@/lib/repositories/client/room.repository.client";
 import { ApiFetchError } from "@/lib/api/base-client/base-client";
-type RemoteVideo = {
-  id: string;
-  stream: MediaStream;
-};
+import useWebsocket from "@/hooks/use-websocket";
+import usePeer from "@/hooks/use-peer";
 
-const config: RTCConfiguration  = {
-  iceTransportPolicy: 'all',
-  iceCandidatePoolSize: 3
-};
 export default function Page() {
   const lobbyRes = useLobby()
   const userRes = useUser()
+  const {
+    customMessageHandlers,
+    connectWS,
+    sendWS,
+    wsOpen,
+  } = useWebsocket(`${output.signalingOrigin}/ws/live/1`)
+  const {
+    connectPeer,
+    setRemoteVideos,
+    handleOffer,
+    disconnectPeerConnection,
+    pcRef,
+    remoteVideos,
+    onICECandidateHandler,
+  } = usePeer()
   const [lobby, setLobby] = useState(lobbyRes);
-  const [wsOpen, setWsOpen] = useState(false);
-  const [remoteVideos, setRemoteVideos] = useState<RemoteVideo[]>([]);
   const [logText, setLogText] = useState("");
   const [showLocal, setShowLocal] = useState(true);
   const remoteCount = remoteVideos.length;
-  const wsRef = useRef<WebSocket | null>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const queuedRef = useRef({
@@ -40,9 +45,60 @@ export default function Page() {
 
   useEffect(() => {
     console.log(lobby)
-    connectWS()
+    start()
   }, [])
-
+  customMessageHandlers.current['offer'] = async (data) => {
+    const offer = JSON.parse(data);
+    console.log+("[WS] ← offer");
+    if (pcRef.current) {
+      const answer = await handleOffer(offer);
+      sendWS({ event: "answer", data: JSON.stringify(answer) });
+    } else {
+      queuedRef.current.offer = offer;
+    }
+  }
+  customMessageHandlers.current['candidate'] = (data) => {
+    const cand = JSON.parse(data);
+    console.log("[WS] ← candidate");
+    if (pcRef.current) {
+      pcRef.current.addIceCandidate(cand).catch((e) =>
+        console.log("addIceCandidate err:", e)
+      );
+    } else {
+      queuedRef.current.candidates.push(cand);
+    }
+  }
+  customMessageHandlers.current['access'] = (data) => {
+    const users = JSON.parse(data);
+    console.log("[WS] ← users: ", users)
+    setLobby({
+      ...lobby,
+      users,
+    })
+  }
+  const start = async () => {
+    try {
+      await startCamera()
+      await connectWS()
+      credentialRef.current = await signalingRepositoryClient.generateTurnCredential()
+    } catch (e) {
+      log("getUserMedia error:", e);
+      return;
+    }
+  }
+  const startCamera = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
+    localStreamRef.current = stream;
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+      localVideoRef.current.onloadedmetadata = () => {
+        localVideoRef.current?.play().catch(() => {});
+      };
+    }
+  }
   const joinRoom = async () => {
     try {
       const lobbyRes = await roomRepositoryClient.enterLobby(lobby.id)
@@ -51,6 +107,10 @@ export default function Page() {
       //   await connectWS()
       // }
       // await startCamera()
+      if (!wsOpen) {
+        log("WS not open");
+        return;
+      }
       await createPeer()
       setRoomState('room')
     } catch (error) {
@@ -73,15 +133,18 @@ export default function Page() {
   }
 
   const hangup = async () => {
-    await closePeer()
+    await disconnectPeerConnection()
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((t) => t.stop());
+    }
     setRoomState('exit')
   }
 
   const goBackToLobby = async () => {
     const lobbyRes = await roomRepositoryClient.enterLobby(lobby.id)
     setLobby(lobbyRes)
-    await connectWS()
     setRoomState('lobby')
+    await start()
   }
 
   const log = (...args: any[]) => {
@@ -89,183 +152,41 @@ export default function Page() {
     console.log(...args);
   };
 
-  // ============================================================
-  // 1. WebSocket 接続
-  // ============================================================
-  const connectWS = async () => {
-    if (wsOpen) {
-      log("WS already open");
-      return;
-    }
-
-    // getUserMedia
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-        localVideoRef.current.onloadedmetadata = () => {
-          localVideoRef.current?.play().catch(() => {});
-        };
-      }
-    } catch (e) {
-      log("getUserMedia error:", e);
-      return;
-    }
-
-    const url = `${output.signalingOrigin}/ws/live/1`;
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
-
-    ws.onopen = async () => {
-      setWsOpen(true);
-      credentialRef.current = await signalingRepositoryClient.generateTurnCredential()
-      log("[WS] open:", url);
-    };
-
-    ws.onclose = () => {
-      setWsOpen(false);
-      log("WS closed");
-    };
-
-    ws.onerror = (e) => log("WS error:", e);
-
-    ws.onmessage = (ev) => {
-      let msg;
-      try {
-        msg = JSON.parse(ev.data);
-      } catch {
-        log("Invalid JSON:", ev.data);
-        return;
-      }
-      console.log(msg.event)
-      if (msg.event === "offer") {
-        const offer = JSON.parse(msg.data);
-        log("[WS] ← offer");
-        if (pcRef.current) {
-          handleOffer(offer);
-        } else {
-          queuedRef.current.offer = offer;
-        }
-      } else if (msg.event === "candidate") {
-        const cand = JSON.parse(msg.data);
-        log("[WS] ← candidate");
-        if (pcRef.current) {
-          pcRef.current.addIceCandidate(cand).catch((e) =>
-            log("addIceCandidate err:", e)
-          );
-        } else {
-          queuedRef.current.candidates.push(cand);
-        }
-      } else if (msg.event === "access") {
-        const users = JSON.parse(msg.data);
-        console.log(users)
-        setLobby({
-          ...lobby,
-          users,
-        })
-      }
-    };
-  };
-
-  // ============================================================
-  // 2. PeerConnection 初期化
-  // ============================================================
   const createPeer = async () => {
     if (!wsOpen) {
       log("WS not open");
       return;
     }
-    if (pcRef.current) {
-      log("Peer already exists");
-      return;
-    }
-
-    const pc = new RTCPeerConnection({
-      ...config,
-      ...credentialRef.current,
-    });
-    pcRef.current = pc;
-
-    const local = localStreamRef.current!;
-    local.getTracks().forEach((t) => pc.addTrack(t, local));
-    log("[Peer] local tracks added");
-
-    // remote track
-    pc.ontrack = (evt) => {
-      if (evt.track.kind !== "video") return;
-
-      const stream = evt.streams[0];
-      const id = stream.id + "_" + evt.track.id;
-
-      setRemoteVideos((prev) => {
-        if (prev.some((v) => v.id === id)) return prev;
-        return [...prev, { id, stream }];
-      });
-
-      // track 終了
-      evt.track.onended = () => {
-        setRemoteVideos((prev) => prev.filter((v) => v.id !== id));
-      };
-
-      stream.onremovetrack = ({ track }) => {
-        if (track.id === evt.track.id) {
-          setRemoteVideos((prev) => prev.filter((v) => v.id !== id));
-        }
-      };
-    };
-
-    // ICE candidate
-    pc.onicecandidate = (e) => {
+    onICECandidateHandler.current = (e) => {
       if (e.candidate) {
         sendWS({
           event: "candidate",
           data: JSON.stringify(e.candidate),
         });
       }
-    };
+    }
+    await connectPeer()
 
-    // queued offer があれば処理
+    const local = localStreamRef.current!;
+    local.getTracks().forEach((t) => pcRef.current?.addTrack(t, local));
+    log("[Peer] local tracks added");
+
+    console.log('queuedRef.current.offer', queuedRef.current.offer)
     if (queuedRef.current.offer) {
-      await handleOffer(queuedRef.current.offer);
+      const answer = await handleOffer(queuedRef.current.offer);
+      console.log('answer', answer)
+      sendWS({ event: "answer", data: JSON.stringify(answer) });
       queuedRef.current.offer = null;
     }
 
     // queued candidates
     for (const c of queuedRef.current.candidates) {
-      await pc.addIceCandidate(c).catch((e) => log("queued ICE err:", e));
+      await   pcRef.current?.addIceCandidate(c).catch((e) => log("queued ICE err:", e));
     }
     queuedRef.current.candidates = [];
 
     sendWS({ event: "offer" });
     log("[Peer] ready");
-  };
-
-  const sendWS = (msg: any) => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      log("WS not open → skip");
-      return;
-    }
-    wsRef.current.send(JSON.stringify(msg));
-  };
-
-  // ============================================================
-  // 3. handleOffer
-  // ============================================================
-  const handleOffer = async (offer: RTCSessionDescriptionInit) => {
-    const pc = pcRef.current!;
-    try {
-      await pc.setRemoteDescription(offer);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      sendWS({ event: "answer", data: JSON.stringify(answer) });
-      log("[Peer] → answer");
-    } catch (e) {
-      log("handleOffer error:", e);
-    }
   };
 
   // ============================================================
@@ -279,15 +200,6 @@ export default function Page() {
     setRemoteVideos([]);
     log("[Peer] closed");
   };
-
-  const closeWS = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop());
-    }
-    wsRef.current?.close();
-    wsRef.current = null;
-  };
-
   // ============================================================
   // JSX
   // ============================================================
@@ -319,13 +231,14 @@ export default function Page() {
 
             <div className="mt-6 flex justify-center">
               <button
-                onClick={joinRoom}
+                onClick={async () => await joinRoom()}
                 className="
                   bg-blue-500 hover:bg-blue-600
                   text-white font-semibold
                   px-6 py-2 rounded-lg
                   transition-all
                 "
+                disabled={!wsOpen}
               >
                 参加
               </button>
