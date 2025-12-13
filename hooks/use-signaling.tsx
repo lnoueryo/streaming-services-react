@@ -15,7 +15,6 @@ export default function useSignaling(url: string) {
   } = useWebsocket(url)
   const {
     createPeer,
-    setRemoteVideos,
     handleOffer,
     disconnectPeerConnection,
     pcRef,
@@ -115,7 +114,6 @@ export default function useSignaling(url: string) {
       console.log('[Peer] local tracks added')
     }
 
-    console.log('queuedRef.current.offer', queuedRef.current.offer)
     if (queuedRef.current.offer) {
       const answer = await handleOffer(queuedRef.current.offer)
       console.log('answer', answer)

@@ -38,11 +38,11 @@ export class SpaceRepository {
     return res && (await res.json())
   }
 
-  public async enterRoom(
+  public async enableEntry(
     id: string,
     params?: { force: boolean }
   ): Promise<RoomResponse> {
-    const res = await this.client.patch(`/spaces/${id}/room`, params)
+    const res = await this.client.patch(`/spaces/${id}/enable`, params)
     return res && (await res.json())
   }
 

@@ -17,12 +17,12 @@ class FirebaseAuth {
   public async decodeSessionCookie(
     token: string,
     checkRevoked?: boolean
-  ): Promise<{ uid: string; email?: string; name: string; picture?: string }> {
+  ): Promise<{ id: string; email?: string; name: string; picture?: string }> {
     const { uid, email, name, picture } = await this.auth.verifySessionCookie(
       token,
       checkRevoked
     )
-    return { uid, email, name, picture }
+    return { id: uid, email, name, picture }
   }
   public async verifySessionCookie(
     token: string,

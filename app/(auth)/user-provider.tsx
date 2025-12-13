@@ -2,20 +2,20 @@
 
 import { createContext, useContext } from 'react'
 
-export interface DecodedUser {
-  uid: string
+export interface AuthUser {
+  id: string
   email?: string
   name: string
   picture?: string
 }
 
-const UserContext = createContext<DecodedUser | null>(null)
+const UserContext = createContext<AuthUser | null>(null)
 
 export function UserProvider({
   user,
   children
 }: {
-  user: DecodedUser | null
+  user: AuthUser
   children: React.ReactNode
 }) {
   return <UserContext.Provider value={user}>{children}</UserContext.Provider>

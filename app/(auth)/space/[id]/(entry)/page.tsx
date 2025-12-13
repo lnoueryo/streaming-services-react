@@ -29,20 +29,14 @@ export default function Page() {
     'reception' | 'lobby' | 'room' | 'exit'
   >('reception')
 
+  customMessageHandlers.current['close'] = async (data) => {
+    await hangup()
+    setSpaceState('exit')
+  }
   useEffect(() => {
     console.log(room)
     start()
   }, [])
-  // useEffect(() => {
-  //   console.log('connectionState changed:', connectionState)
-  //   if (connectionState === 'pending') {
-  //     setSpaceState('room')
-  //   } else if (connectionState === 'stop') {
-  //     setSpaceState('exit')
-  //   } else if (connectionState === 'ready') {
-  //     setSpaceState('room')
-  //   }
-  // }, [connectionState])
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localLobbyVideoRef.current) {
