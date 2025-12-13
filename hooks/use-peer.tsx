@@ -14,8 +14,12 @@ export default function usePeer() {
   const credentialRef = useRef<TurnCredential | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const onTrackHandler = useRef(onOriginalTrackHandler)
+  const onICEConnectionStateHandler = useRef(onOriginalICEConnectionStateHandler)
+  const onConnectionStateHandler = useRef(onOriginalConnectionStateHandler)
   const onICECandidateHandler = useRef<(e: RTCPeerConnectionIceEvent) => void>(null)
-  const connectPeer = async () => {
+  const retry = useRef(0);
+  const maxRetry = 20;
+  const createPeer = async () => {
     if (pcRef.current) {
       console.log("Peer already exists");
       return;
@@ -32,11 +36,43 @@ export default function usePeer() {
       console.log("[Peer] local tracks added");
     }
 
+    pc.oniceconnectionstatechange = onICEConnectionStateHandler.current
+    pc.onconnectionstatechange = onConnectionStateHandler.current
+    pc.onsignalingstatechange = () => {
+      console.log("%c[SIGNALING]", "color: cyan", performance.now(), pc.signalingState);
+    }
+    pc.onicegatheringstatechange = () => {
+      console.log("%c[ICE GATHERING]", "color: purple", performance.now(), pc.iceGatheringState);
+    }
     pc.ontrack = onTrackHandler.current
+
     if (!onICECandidateHandler.current) {
       throw new Error("onICECandidateHandler is null");
     }
     pc.onicecandidate = onICECandidateHandler.current
+    retry.current = 0
+    console.log('created')
+  }
+
+  const recreatePeer = async () => {
+    setRemoteVideos([]);
+    if (retry.current >= maxRetry) {
+      console.error("WS failed to reconnect.");
+      return false;
+    }
+    retry.current++;
+    console.log("%c[RECONNECT SCHEDULED]", "color:orange", performance.now());
+    return new Promise<boolean>((resolve) => {
+      setTimeout(async () => {
+        console.log("%c[RECONNECTING...]", "color:orange", `${retry.current}/${maxRetry}`, performance.now());
+        try {
+          await createPeer()
+          resolve(true)
+        } catch (error) {
+          return await recreatePeer()
+        }
+      }, 2000);
+    })
   }
 
   const handleOffer = async (offer: RTCSessionDescriptionInit) => {
@@ -70,6 +106,28 @@ export default function usePeer() {
     };
   }, []);
 
+  async function onOriginalICEConnectionStateHandler(evt: Event) {
+    console.log("%c[ICE CONNECTION]", "color: violet", performance.now(), pcRef.current?.iceConnectionState);
+
+    if (pcRef.current?.iceConnectionState === "failed") {
+      console.warn("ICE failed → recreatePeer()");
+      pcRef.current.close()
+      pcRef.current = null
+      return await recreatePeer();
+    }
+  }
+
+  async function onOriginalConnectionStateHandler(evt: Event) {
+    console.log("%c[PC CONNECTION]", "color: yellow", performance.now(), pcRef.current?.connectionState);
+
+    if (pcRef.current?.connectionState === "failed") {
+      console.warn("❌ PeerConnection failed — restarting...");
+      pcRef.current.close()
+      pcRef.current = null
+      return await recreatePeer();
+    }
+  }
+
   function onOriginalTrackHandler(evt: RTCTrackEvent) {
     if (evt.track.kind !== 'video') {
       return
@@ -94,12 +152,17 @@ export default function usePeer() {
   }
 
   return {
-    connectPeer,
+    createPeer,
+    recreatePeer,
+    onOriginalConnectionStateHandler,
+    onOriginalICEConnectionStateHandler,
     handleOffer,
     disconnectPeerConnection,
     pcRef,
     onTrackHandler,
     onICECandidateHandler,
+    onICEConnectionStateHandler,
+    onConnectionStateHandler,
     remoteVideos,
     setRemoteVideos,
   }

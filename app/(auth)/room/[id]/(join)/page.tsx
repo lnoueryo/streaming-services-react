@@ -9,65 +9,57 @@ import { useLobby } from "./lobby-provider";
 import { useUser } from "@/app/(auth)/user-provider";
 import { roomRepositoryClient } from "@/lib/repositories/client/room.repository.client";
 import { ApiFetchError } from "@/lib/api/base-client/base-client";
-import useWebsocket from "@/hooks/use-websocket";
-import usePeer from "@/hooks/use-peer";
+import Modal from "@/components/atoms/modal";
+import useSignaling from "@/hooks/use-signaling";
 
 export default function Page() {
   const lobbyRes = useLobby()
   const userRes = useUser()
   const {
-    customMessageHandlers,
-    connectWS,
-    sendWS,
-    wsOpen,
-  } = useWebsocket(`${output.signalingOrigin}/ws/live/1`)
-  const {
-    connectPeer,
-    setRemoteVideos,
-    handleOffer,
-    disconnectPeerConnection,
-    pcRef,
     remoteVideos,
-    onICECandidateHandler,
-  } = usePeer()
+    customMessageHandlers,
+    localStreamRef,
+    connectWS,
+    connectPeer,
+    hangup,
+  } = useSignaling(`${output.signalingOrigin}/ws/live/1`)
   const [lobby, setLobby] = useState(lobbyRes);
-  const [logText, setLogText] = useState("");
   const [showLocal, setShowLocal] = useState(true);
+  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(lobby.isJoined);
   const remoteCount = remoteVideos.length;
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const queuedRef = useRef({
-    offer: null as RTCSessionDescriptionInit | null,
-    candidates: [] as RTCIceCandidateInit[],
-  });
+  const localLobbyVideoRef = useRef<HTMLVideoElement>(null);
+  const localRoomVideoRef = useRef<HTMLVideoElement>(null);
   const credentialRef = useRef<TurnCredential | null>(null);
-  const [roomState, setRoomState] = useState<'lobby' | 'room' | 'exit'>('lobby')
+  const [roomState, setRoomState] = useState<'reception' | 'lobby' | 'room' | 'exit'>('reception')
 
   useEffect(() => {
     console.log(lobby)
     start()
   }, [])
-  customMessageHandlers.current['offer'] = async (data) => {
-    const offer = JSON.parse(data);
-    console.log+("[WS] ← offer");
-    if (pcRef.current) {
-      const answer = await handleOffer(offer);
-      sendWS({ event: "answer", data: JSON.stringify(answer) });
-    } else {
-      queuedRef.current.offer = offer;
+  // useEffect(() => {
+  //   console.log('connectionState changed:', connectionState)
+  //   if (connectionState === 'pending') {
+  //     setRoomState('lobby')
+  //   } else if (connectionState === 'stop') {
+  //     setRoomState('exit')
+  //   } else if (connectionState === 'ready') {
+  //     setRoomState('room')
+  //   }
+  // }, [connectionState])
+  useEffect(() => {
+    if (localLobbyVideoRef.current) {
+      localLobbyVideoRef.current.srcObject = localStreamRef.current;
+      localLobbyVideoRef.current.onloadedmetadata = () => {
+        localLobbyVideoRef.current?.play().catch(() => {});
+      };
     }
-  }
-  customMessageHandlers.current['candidate'] = (data) => {
-    const cand = JSON.parse(data);
-    console.log("[WS] ← candidate");
-    if (pcRef.current) {
-      pcRef.current.addIceCandidate(cand).catch((e) =>
-        console.log("addIceCandidate err:", e)
-      );
-    } else {
-      queuedRef.current.candidates.push(cand);
+    if (localRoomVideoRef.current) {
+      localRoomVideoRef.current.srcObject = localStreamRef.current;
+      localRoomVideoRef.current.onloadedmetadata = () => {
+        localRoomVideoRef.current?.play().catch(() => {});
+      };
     }
-  }
+  }, [roomState])
   customMessageHandlers.current['access'] = (data) => {
     const users = JSON.parse(data);
     console.log("[WS] ← users: ", users)
@@ -81,8 +73,9 @@ export default function Page() {
       await startCamera()
       await connectWS()
       credentialRef.current = await signalingRepositoryClient.generateTurnCredential()
+      setRoomState('lobby')
     } catch (e) {
-      log("getUserMedia error:", e);
+      console.log("getUserMedia error:", e);
       return;
     }
   }
@@ -92,12 +85,6 @@ export default function Page() {
       audio: true,
     });
     localStreamRef.current = stream;
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream;
-      localVideoRef.current.onloadedmetadata = () => {
-        localVideoRef.current?.play().catch(() => {});
-      };
-    }
   }
   const joinRoom = async () => {
     try {
@@ -107,11 +94,11 @@ export default function Page() {
       //   await connectWS()
       // }
       // await startCamera()
-      if (!wsOpen) {
-        log("WS not open");
+      if (roomState === 'exit') {
+        console.log("WS not open");
         return;
       }
-      await createPeer()
+      await connectPeer()
       setRoomState('room')
     } catch (error) {
       if (error instanceof ApiFetchError) {
@@ -132,14 +119,6 @@ export default function Page() {
     }
   }
 
-  const hangup = async () => {
-    await disconnectPeerConnection()
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop());
-    }
-    setRoomState('exit')
-  }
-
   const goBackToLobby = async () => {
     const lobbyRes = await roomRepositoryClient.enterLobby(lobby.id)
     setLobby(lobbyRes)
@@ -147,59 +126,6 @@ export default function Page() {
     await start()
   }
 
-  const log = (...args: any[]) => {
-    setLogText((prev) => prev + args.join(" ") + "\n");
-    console.log(...args);
-  };
-
-  const createPeer = async () => {
-    if (!wsOpen) {
-      log("WS not open");
-      return;
-    }
-    onICECandidateHandler.current = (e) => {
-      if (e.candidate) {
-        sendWS({
-          event: "candidate",
-          data: JSON.stringify(e.candidate),
-        });
-      }
-    }
-    await connectPeer()
-
-    const local = localStreamRef.current!;
-    local.getTracks().forEach((t) => pcRef.current?.addTrack(t, local));
-    log("[Peer] local tracks added");
-
-    console.log('queuedRef.current.offer', queuedRef.current.offer)
-    if (queuedRef.current.offer) {
-      const answer = await handleOffer(queuedRef.current.offer);
-      console.log('answer', answer)
-      sendWS({ event: "answer", data: JSON.stringify(answer) });
-      queuedRef.current.offer = null;
-    }
-
-    // queued candidates
-    for (const c of queuedRef.current.candidates) {
-      await   pcRef.current?.addIceCandidate(c).catch((e) => log("queued ICE err:", e));
-    }
-    queuedRef.current.candidates = [];
-
-    sendWS({ event: "offer" });
-    log("[Peer] ready");
-  };
-
-  // ============================================================
-  // 4. close
-  // ============================================================
-  const closePeer = () => {
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-    setRemoteVideos([]);
-    log("[Peer] closed");
-  };
   // ============================================================
   // JSX
   // ============================================================
@@ -208,11 +134,19 @@ export default function Page() {
       {
         roomState === 'lobby' ?
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div>
+            <video
+              ref={localLobbyVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover scale-x-[-1]"
+            />
+          </div>
           <div className="bg-gray-800 w-full max-w-md rounded-xl shadow-2xl p-6 text-white">
             <h2 className="text-lg font-semibold mb-4 text-center">
               現在の参加者
             </h2>
-
             <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
               {lobby.users.map((user) => (
                 <li
@@ -238,7 +172,7 @@ export default function Page() {
                   px-6 py-2 rounded-lg
                   transition-all
                 "
-                disabled={!wsOpen}
+                // disabled={roomState === 'exit'}
               >
                 参加
               </button>
@@ -315,7 +249,7 @@ export default function Page() {
             `}
           >
             <video
-              ref={localVideoRef}
+              ref={localRoomVideoRef}
               autoPlay
               muted
               playsInline
@@ -378,7 +312,10 @@ export default function Page() {
                 Peer
               </button> */}
               <button
-                onClick={async() => await hangup()}
+                onClick={async() => {
+                  await hangup()
+                  setRoomState('exit')
+                }}
                 className="
                   flex items-center gap-1
                   bg-red-500/80 hover:bg-red-600
@@ -413,10 +350,33 @@ export default function Page() {
             </>
           </motion.div>
         </div>
-        :
+        : roomState === 'exit' ?
         <div>
           <button onClick={async () => await goBackToLobby()}>再参加</button>
         </div>
+        : null
+      }
+      {
+        isOpenRejoinConfirmation &&
+        <Modal open={isOpenRejoinConfirmation} onClose={() => setIsOpenRejoinConfirmation(false)}>
+          <h2 className="text-lg font-semibold mb-2">確認</h2>
+          <p className="mb-4">別の端末で既に参加されているようです。こちらの端末に切り替えますか。</p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 bg-gray-700 rounded"
+              onClick={() => setIsOpenRejoinConfirmation(false)}
+            >
+              キャンセル
+            </button>
+            <button
+              className="px-3 py-1 bg-red-500 rounded"
+              onClick={() => rejoin()}
+            >
+              OK
+            </button>
+          </div>
+        </Modal>
       }
     </>
   );

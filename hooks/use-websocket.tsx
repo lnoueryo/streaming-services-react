@@ -12,9 +12,9 @@ export default function useWebsocket(url: string) {
   const [wsOpen, setWsOpen] = useState(false);
   const customMessageHandlers = useRef<Record<string, (data: any) => void>>({});
   const retry = useRef(0);
+  const maxRetry = 20;
   const onClose = useRef(async (e: CloseEvent) => { if (!e.wasClean) await reconnectWS() });
   const onError = useRef(async (e: Event) => {});
-  const maxRetry = 20;
 
   const sendWS = (msg: any) => {
     const ws = wsRef.current;
@@ -25,7 +25,6 @@ export default function useWebsocket(url: string) {
     ws.send(JSON.stringify(msg));
   };
 
-  // ====== WS 接続 ======
   const connectWS = (timeoutMs = 5000) => {
     if (wsOpen) {
       console.log("%c[WS ALREADY OPEN]", "color: #c6c623ff", performance.now(), url);
@@ -110,8 +109,10 @@ export default function useWebsocket(url: string) {
   return {
     connectWS,
     reconnectWS,
+    disconnectWSConnection,
     sendWS,
     customMessageHandlers,
     wsOpen,
+    wsRef,
   }
 }
