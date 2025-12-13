@@ -1,9 +1,9 @@
 // auth/auth.service.ts
-import type { AuthProvider, AuthUser } from "./types";
-import firebaseProvider from "./provider/firebase";
+import type { AuthProvider, AuthUser } from './types'
+import firebaseProvider from './provider/firebase'
 
 // 今の環境で選択
-const provider: AuthProvider = firebaseProvider;
+const provider: AuthProvider = firebaseProvider
 
 const AuthService = {
   signInWithGoogle: () => provider.signInWithGoogle(),
@@ -15,8 +15,9 @@ const AuthService = {
 
   signOut: () => provider.signOut(),
   getIdToken: () => provider.getIdToken(),
-  onAuthStateChanged: (cb: (user: any) => void) => provider.onAuthStateChanged(cb),
-  getCurrentUser: () => provider.getCurrentUser(),
-};
+  onAuthStateChanged: (cb: (user: any) => void) =>
+    provider.onAuthStateChanged(cb),
+  getCurrentUser: () => provider.getCurrentUser()
+}
 
-export default AuthService;
+export default AuthService

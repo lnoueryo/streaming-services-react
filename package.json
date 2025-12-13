@@ -7,7 +7,7 @@
     "dev:ssl": "next dev --hostname 0.0.0.0 --experimental-https",
     "build": "next build",
     "start": "next start",
-    "format": "prettier --write \"app/**/*.tsx\"",
+    "format": "prettier --write \"app/**/*.tsx\" \"components/**/*.tsx\" \"lib/**/*.ts\" \"repositories/**/*.ts\" \"hooks/**/*.tsx\"",
     "lint": "eslint"
   },
   "dependencies": {

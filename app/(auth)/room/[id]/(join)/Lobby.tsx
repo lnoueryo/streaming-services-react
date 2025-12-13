@@ -1,26 +1,29 @@
 'use client'
-import { useLobby } from "@/app/(auth)/room/[id]/(join)/lobby-provider";
-import { ApiFetchError } from "@/lib/api/base-client/base-client";
-import { roomRepositoryClient } from "@/lib/repositories/client/room.repository.client";
-import { useEffect, useRef, useState } from "react";
-import Modal from "@/components/atoms/modal";
-import { useSignaling } from "./signaling-provider";
-import { useRouter } from "next/navigation";
+import { useLobby } from '@/app/(auth)/room/[id]/(join)/lobby-provider'
+import { ApiFetchError } from '@/lib/api/base-client/base-client'
+import { roomRepositoryClient } from '@/lib/repositories/client/room.repository.client'
+import { useEffect, useRef, useState } from 'react'
+import Modal from '@/components/atoms/modal'
+import { useSignaling } from './signaling-provider'
+import { useRouter } from 'next/navigation'
 
-export default function Lobby({ setRoomState }: { setRoomState: (state: 'room') => void }) {
+export default function Lobby({
+  setRoomState
+}: {
+  setRoomState: (state: 'room') => void
+}) {
   const { lobby, setLobby } = useLobby()
   const router = useRouter()
-  const {
-    localStreamRef,
-    connectPeer,
-  } = useSignaling()
+  const { localStreamRef, connectPeer } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
-  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(lobby.isJoined)
+  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
+    lobby.isJoined
+  )
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localVideoRef.current) {
-        localVideoRef.current.srcObject = localStreamRef.current;
-        localVideoRef.current.play().catch(() => {});
+        localVideoRef.current.srcObject = localStreamRef.current
+        localVideoRef.current.play().catch(() => {})
       }
     })
   }, [localVideoRef.current])
@@ -93,14 +96,17 @@ export default function Lobby({ setRoomState }: { setRoomState: (state: 'room') 
               参加
             </button>
           </div>
-
         </div>
       </div>
-    {
-        isOpenRejoinConfirmation &&
-        <Modal open={isOpenRejoinConfirmation} onClose={() => setIsOpenRejoinConfirmation(false)}>
+      {isOpenRejoinConfirmation && (
+        <Modal
+          open={isOpenRejoinConfirmation}
+          onClose={() => setIsOpenRejoinConfirmation(false)}
+        >
           <h2 className="text-lg font-semibold mb-2">確認</h2>
-          <p className="mb-4">別の端末で既に参加されているようです。こちらの端末に切り替えますか。</p>
+          <p className="mb-4">
+            別の端末で既に参加されているようです。こちらの端末に切り替えますか。
+          </p>
 
           <div className="flex justify-end gap-2">
             <button
@@ -117,7 +123,7 @@ export default function Lobby({ setRoomState }: { setRoomState: (state: 'room') 
             </button>
           </div>
         </Modal>
-      }
+      )}
     </>
   )
 }

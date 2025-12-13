@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from 'framer-motion'
 
 export default function Modal({
   open,
   onClose,
-  children,
+  children
 }: {
-  open: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
+  open: boolean
+  onClose: () => void
+  children: React.ReactNode
 }) {
   return (
     <AnimatePresence>
@@ -34,5 +34,5 @@ export default function Modal({
         </motion.div>
       )}
     </AnimatePresence>
-  );
+  )
 }

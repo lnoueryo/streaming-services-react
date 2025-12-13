@@ -1,8 +1,8 @@
 // Server Component（async OK）
-import Viewer from "@/components/organisms/Viewer";
+import Viewer from '@/components/organisms/Viewer'
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }
 
 export default async function Page({ params }: PageProps) {

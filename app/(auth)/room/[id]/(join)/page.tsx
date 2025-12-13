@@ -1,14 +1,14 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from 'framer-motion';
-import { TurnCredential } from "@/repositories/signaling.repository";
-import { signalingRepositoryClient } from "@/lib/repositories/client/signaling.repository.client";
-import { useLobby } from "./lobby-provider";
-import { useUser } from "@/app/(auth)/user-provider";
-import { roomRepositoryClient } from "@/lib/repositories/client/room.repository.client";
-import Lobby from "./Lobby";
-import { useSignaling } from "./signaling-provider";
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { TurnCredential } from '@/repositories/signaling.repository'
+import { signalingRepositoryClient } from '@/lib/repositories/client/signaling.repository.client'
+import { useLobby } from './lobby-provider'
+import { useUser } from '@/app/(auth)/user-provider'
+import { roomRepositoryClient } from '@/lib/repositories/client/room.repository.client'
+import Lobby from './Lobby'
+import { useSignaling } from './signaling-provider'
 
 export default function Page() {
   const { lobby, setLobby } = useLobby()
@@ -18,14 +18,16 @@ export default function Page() {
     customMessageHandlers,
     localStreamRef,
     connectWS,
-    hangup,
+    hangup
   } = useSignaling()
-  const [showLocal, setShowLocal] = useState(true);
-  const remoteCount = remoteVideos.length;
-  const localLobbyVideoRef = useRef<HTMLVideoElement>(null);
-  const localRoomVideoRef = useRef<HTMLVideoElement>(null);
-  const credentialRef = useRef<TurnCredential | null>(null);
-  const [roomState, setRoomState] = useState<'reception' | 'lobby' | 'room' | 'exit'>('reception')
+  const [showLocal, setShowLocal] = useState(true)
+  const remoteCount = remoteVideos.length
+  const localLobbyVideoRef = useRef<HTMLVideoElement>(null)
+  const localRoomVideoRef = useRef<HTMLVideoElement>(null)
+  const credentialRef = useRef<TurnCredential | null>(null)
+  const [roomState, setRoomState] = useState<
+    'reception' | 'lobby' | 'room' | 'exit'
+  >('reception')
 
   useEffect(() => {
     console.log(lobby)
@@ -44,45 +46,46 @@ export default function Page() {
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localLobbyVideoRef.current) {
-        setVideoStream(localLobbyVideoRef.current);
+        setVideoStream(localLobbyVideoRef.current)
       }
       if (localRoomVideoRef.current) {
-        setVideoStream(localRoomVideoRef.current);
+        setVideoStream(localRoomVideoRef.current)
       }
     })
   }, [roomState])
 
   const setVideoStream = (video: HTMLVideoElement) => {
-    video.pause();
-    video.srcObject = null;
-    video.srcObject = localStreamRef.current;
-    video.play().catch(() => {});
-  };
+    video.pause()
+    video.srcObject = null
+    video.srcObject = localStreamRef.current
+    video.play().catch(() => {})
+  }
   customMessageHandlers.current['access'] = (data) => {
-    const users = JSON.parse(data);
-    console.log("[WS] ← users: ", users)
-    setLobby(({
+    const users = JSON.parse(data)
+    console.log('[WS] ← users: ', users)
+    setLobby({
       ...lobby,
-      users,
-    }))
+      users
+    })
   }
   const start = async () => {
     try {
       await startCamera()
       await connectWS()
-      credentialRef.current = await signalingRepositoryClient.generateTurnCredential()
+      credentialRef.current =
+        await signalingRepositoryClient.generateTurnCredential()
       setRoomState('lobby')
     } catch (e) {
-      console.log("getUserMedia error:", e);
-      return;
+      console.log('getUserMedia error:', e)
+      return
     }
   }
   const startCamera = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
-      audio: true,
-    });
-    localStreamRef.current = stream;
+      audio: true
+    })
+    localStreamRef.current = stream
   }
 
   const goBackToLobby = async () => {
@@ -96,10 +99,9 @@ export default function Page() {
   // ============================================================
   return (
     <>
-      {
-        roomState === 'lobby' ?
+      {roomState === 'lobby' ? (
         <Lobby setRoomState={setRoomState} />
-        : roomState === 'room' ?
+      ) : roomState === 'room' ? (
         <div className="relative w-full h-screen bg-black overflow-hidden">
           {/* Remote Grid（2人のときは縦並び、それ以降は通常） */}
           <motion.div
@@ -128,24 +130,27 @@ export default function Page() {
                     muted
                     className="w-full h-full object-cover scale-x-[-1]"
                     ref={(el) => {
-                      if (!el) return;
+                      if (!el) return
                       if (el.srcObject !== v.stream) {
-                        el.srcObject = v.stream;
+                        el.srcObject = v.stream
                         el.onloadedmetadata = () => {
-                          el.play().catch(() => {});
-                          el.muted = false;
-                        };
+                          el.play().catch(() => {})
+                          el.muted = false
+                        }
                       }
                     }}
                   />
                   <button
                     className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
                     onClick={() => {
-                      const video = (document.activeElement?.closest('div')?.querySelector('video') as HTMLVideoElement) || null;
+                      const video =
+                        (document.activeElement
+                          ?.closest('div')
+                          ?.querySelector('video') as HTMLVideoElement) || null
                       if (video) {
-                        video.muted = !video.muted;
+                        video.muted = !video.muted
                         if (!video.muted) {
-                          video.play().catch(() => {});
+                          video.play().catch(() => {})
                         }
                       }
                     }}
@@ -231,7 +236,7 @@ export default function Page() {
                 Peer
               </button> */}
               <button
-                onClick={async() => {
+                onClick={async () => {
                   await hangup()
                   localStreamRef.current?.getTracks().forEach((t) => t.stop())
                   localStreamRef.current = null
@@ -271,12 +276,11 @@ export default function Page() {
             </>
           </motion.div>
         </div>
-        : roomState === 'exit' ?
+      ) : roomState === 'exit' ? (
         <div>
           <button onClick={async () => await goBackToLobby()}>再参加</button>
         </div>
-        : null
-      }
+      ) : null}
     </>
-  );
+  )
 }

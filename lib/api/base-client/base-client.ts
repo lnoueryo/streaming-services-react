@@ -1,17 +1,16 @@
-
 export type ApiErrorBody = {
-  statusCode: number;
-  errorCode?: string;
-  message?: string;
+  statusCode: number
+  errorCode?: string
+  message?: string
 }
 
 export class ApiFetchError extends Error {
-  public statusCode: number;
-  public errorCode?: string;
+  public statusCode: number
+  public errorCode?: string
 
-  constructor({ statusCode, message, errorCode}: ApiErrorBody) {
-    super(message);
-    this.statusCode = statusCode;
+  constructor({ statusCode, message, errorCode }: ApiErrorBody) {
+    super(message)
+    this.statusCode = statusCode
     this.errorCode = errorCode
   }
 }
@@ -23,10 +22,10 @@ export class BaseClient {
       baseUrl: string,
       options: RequestInit
     ) => Promise<Response | void>
-  ) { }
+  ) {}
   get(url: string, params?: Record<string, any>) {
     return this.apiFetch(`${url}${this.buildQuery(params)}`, {
-      method: 'GET',
+      method: 'GET'
     })
   }
 
@@ -34,7 +33,7 @@ export class BaseClient {
     return this.apiFetch(url, {
       method: 'POST',
       body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     })
   }
 
@@ -42,7 +41,7 @@ export class BaseClient {
     return this.apiFetch(url, {
       method: 'PATCH',
       body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     })
   }
 
@@ -50,13 +49,13 @@ export class BaseClient {
     return this.apiFetch(url, {
       method: 'PUT',
       body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     })
   }
 
   delete(url: string) {
     this.apiFetch(url, {
-      method: 'DELETE',
+      method: 'DELETE'
     })
   }
 
@@ -66,13 +65,13 @@ export class BaseClient {
   }
 
   protected buildQuery(params?: Record<string, any>) {
-    if (!params) return '';
-    const q = new URLSearchParams();
+    if (!params) return ''
+    const q = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        q.append(key, String(value));
+        q.append(key, String(value))
       }
-    });
-    return `?${q.toString()}`;
+    })
+    return `?${q.toString()}`
   }
-};
+}

@@ -1,42 +1,43 @@
-"use client";
+'use client'
 // TODO Viewerのカスタムフック作成
-import { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import output from "@/config";
-import { useViewer } from "@/hooks/use-viewer";
+import { useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import output from '@/config'
+import { useViewer } from '@/hooks/use-viewer'
 
 interface PageProps {
-  id: string;
+  id: string
 }
 
 export default function Viewer({ id }: PageProps) {
-  const {
-    remoteVideos,
-    connect,
-    close,
-  } = useViewer(`${output.signalingOrigin}/ws/live/${id}/viewer`);
+  const { remoteVideos, connect, close } = useViewer(
+    `${output.signalingOrigin}/ws/live/${id}/viewer`
+  )
   useEffect(() => {
-    let cleanup: (() => void) | null = null;
+    let cleanup: (() => void) | null = null
 
     const start = async () => {
       try {
-
         // 初回 offer（SignalingClient の onopen 側が {event:"offer"} を送る実装でも動作します）
-        await connect();
+        await connect()
         cleanup = () => {
-          console.log("%c[CLEANUP START]", "color:red", performance.now());
-          try { close(); } catch {}
-          console.log("%c[CLEANUP END]", "color:red", performance.now());
-        };
+          console.log('%c[CLEANUP START]', 'color:red', performance.now())
+          try {
+            close()
+          } catch {}
+          console.log('%c[CLEANUP END]', 'color:red', performance.now())
+        }
       } catch (err) {
-        console.error(err);
-        alert(err);
+        console.error(err)
+        alert(err)
       }
-    };
+    }
 
-    start();
-    return () => { if (cleanup) cleanup(); };
-  }, []);
+    start()
+    return () => {
+      if (cleanup) cleanup()
+    }
+  }, [])
 
   return (
     <div className="w-full h-screen bg-black overflow-hidden p-2">
@@ -65,8 +66,8 @@ export default function Viewer({ id }: PageProps) {
                 className="w-full h-full object-cover scale-x-[-1]"
                 ref={(el) => {
                   if (el && el.srcObject !== v.stream) {
-                    el.srcObject = v.stream;
-                    el.onloadedmetadata = () => el.play().catch(() => {});
+                    el.srcObject = v.stream
+                    el.onloadedmetadata = () => el.play().catch(() => {})
                   }
                 }}
               />
@@ -76,9 +77,9 @@ export default function Viewer({ id }: PageProps) {
                 onClick={(e) => {
                   const video = (
                     e.currentTarget.parentNode as HTMLElement
-                  ).querySelector("video")!;
-                  video.muted = !video.muted;
-                  if (!video.muted) video.play().catch(() => {});
+                  ).querySelector('video')!
+                  video.muted = !video.muted
+                  if (!video.muted) video.play().catch(() => {})
                 }}
               >
                 音声
@@ -88,5 +89,5 @@ export default function Viewer({ id }: PageProps) {
         </AnimatePresence>
       </motion.div>
     </div>
-  );
+  )
 }

@@ -1,11 +1,15 @@
-import Login from "@/components/organisms/Login";
-import { auth } from "@/lib/server/auth/firebase-admin";
-import { headers } from "next/headers";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import Login from '@/components/organisms/Login'
+import { auth } from '@/lib/server/auth/firebase-admin'
+import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const header = await headers();
+export default async function LoginPage({
+  searchParams
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
+  const header = await headers()
   const back = header.get('referer') || '/'
   const next = header.get('next') || '/'
 
@@ -18,5 +22,5 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       return redirect(back)
     }
   }
-  return <Login next={next} />;
+  return <Login next={next} />
 }

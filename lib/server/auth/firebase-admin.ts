@@ -1,23 +1,20 @@
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { Auth, getAuth, SessionCookieOptions } from "firebase-admin/auth";
-const serviceAccount = require("../../../.credentials/firebase-admin.json");
+import { initializeApp, getApps, cert } from 'firebase-admin/app'
+import { Auth, getAuth, SessionCookieOptions } from 'firebase-admin/auth'
+const serviceAccount = require('../../../.credentials/firebase-admin.json')
 if (!getApps().length) {
   initializeApp({
-    credential: cert(serviceAccount),
-  });
+    credential: cert(serviceAccount)
+  })
 }
 
 class FirebaseAuth {
   constructor(private auth: Auth) {}
-  public async decodeSessionCookie(
-    token: string,
-    checkRevoked?: boolean,
-  ) {
+  public async decodeSessionCookie(token: string, checkRevoked?: boolean) {
     return await this.auth.verifySessionCookie(token, checkRevoked)
   }
   public async verifySessionCookie(
     token: string,
-    checkRevoked?: boolean,
+    checkRevoked?: boolean
   ): Promise<boolean> {
     try {
       await this.decodeSessionCookie(token, checkRevoked)
@@ -28,7 +25,7 @@ class FirebaseAuth {
   }
   public async createSessionCookie(
     token: string,
-    sessionCookieOptions: SessionCookieOptions,
+    sessionCookieOptions: SessionCookieOptions
   ) {
     return await this.auth.createSessionCookie(token, sessionCookieOptions)
   }
@@ -37,4 +34,4 @@ class FirebaseAuth {
   }
 }
 
-export const auth = new FirebaseAuth(getAuth());
+export const auth = new FirebaseAuth(getAuth())

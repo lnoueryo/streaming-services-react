@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import React, {  RefObject, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { RemoteVideoItem } from '@/hooks/use-signaling-client';
+import React, { RefObject, useEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { RemoteVideoItem } from '@/hooks/use-signaling-client'
 interface PageProps {
   remoteVideos: RemoteVideoItem[]
   stream: RefObject<MediaStream | null>
@@ -14,37 +14,36 @@ const Broadcaster: React.FC<PageProps> = ({
   remoteVideos,
   stream,
   switchCam,
-  hangUpAndLeave,
+  hangUpAndLeave
 }) => {
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const [showLocal, setShowLocal] = useState(true);
-  const remoteCount = remoteVideos.length;
+  const localVideoRef = useRef<HTMLVideoElement>(null)
+  const [showLocal, setShowLocal] = useState(true)
+  const remoteCount = remoteVideos.length
 
   useEffect(() => {
-
     const start = async () => {
       if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream.current;
+        localVideoRef.current.srcObject = stream.current
         localVideoRef.current.onloadedmetadata = () => {
-          localVideoRef.current?.play().catch(() => {});
-        };
+          localVideoRef.current?.play().catch(() => {})
+        }
       }
-    };
+    }
 
-    start();
-  }, []);
+    start()
+  }, [])
 
   const hangUp = async () => {
     await hangUpAndLeave()
   }
 
   const switchCamera = async () => {
-    await switchCam();
+    await switchCam()
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream.current;
+      localVideoRef.current.srcObject = stream.current
       localVideoRef.current.onloadedmetadata = () => {
-        localVideoRef.current?.play().catch(() => {});
-      };
+        localVideoRef.current?.play().catch(() => {})
+      }
     }
   }
 
@@ -77,24 +76,27 @@ const Broadcaster: React.FC<PageProps> = ({
                 muted
                 className="w-full h-full object-cover scale-x-[-1]"
                 ref={(el) => {
-                  if (!el) return;
+                  if (!el) return
                   if (el.srcObject !== v.stream) {
-                    el.srcObject = v.stream;
+                    el.srcObject = v.stream
                     el.onloadedmetadata = () => {
-                      el.play().catch(() => {});
-                      el.muted = false;
-                    };
+                      el.play().catch(() => {})
+                      el.muted = false
+                    }
                   }
                 }}
               />
               <button
                 className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
                 onClick={() => {
-                  const video = (document.activeElement?.closest('div')?.querySelector('video') as HTMLVideoElement) || null;
+                  const video =
+                    (document.activeElement
+                      ?.closest('div')
+                      ?.querySelector('video') as HTMLVideoElement) || null
                   if (video) {
-                    video.muted = !video.muted;
+                    video.muted = !video.muted
                     if (!video.muted) {
-                      video.play().catch(() => {});
+                      video.play().catch(() => {})
                     }
                   }
                 }}
@@ -158,7 +160,7 @@ const Broadcaster: React.FC<PageProps> = ({
       >
         <>
           <button
-            onClick={async() => await hangUp()}
+            onClick={async () => await hangUp()}
             className="
               flex items-center gap-1
               bg-red-500/80 hover:bg-red-600
@@ -182,7 +184,7 @@ const Broadcaster: React.FC<PageProps> = ({
         </>
       </motion.div>
     </div>
-  );
-};
+  )
+}
 
-export default Broadcaster;
+export default Broadcaster

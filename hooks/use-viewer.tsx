@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { useSignalingClient } from "./use-signaling-client";
+import { useRef } from 'react'
+import { useSignalingClient } from './use-signaling-client'
 
 export function useViewer(url: string) {
   const {
@@ -12,21 +12,26 @@ export function useViewer(url: string) {
     connect: _connect,
     reconnect: _reconnect,
     send,
-    close,
+    close
   } = useSignalingClient(url)
   const stream = useRef<MediaStream | null>(null)
   const isFrontCam = useRef(false)
-  const connect = async() => {
-    await _connect();
+  const connect = async () => {
+    await _connect()
   }
 
   const reconnect = () => {
-    _reconnect();
-    console.log("%c[RECONNECT SCHEDULED]", "color:orange", performance.now());
+    _reconnect()
+    console.log('%c[RECONNECT SCHEDULED]', 'color:orange', performance.now())
     setTimeout(async () => {
-      console.log("%c[RECONNECTING...]", "color:orange", `${retry}/${maxRetry}`, performance.now());
-      await connect();
-    }, 1000);
+      console.log(
+        '%c[RECONNECTING...]',
+        'color:orange',
+        `${retry}/${maxRetry}`,
+        performance.now()
+      )
+      await connect()
+    }, 1000)
   }
   return {
     remoteVideos,
@@ -38,6 +43,6 @@ export function useViewer(url: string) {
     connect,
     reconnect,
     send,
-    close,
-  };
+    close
+  }
 }
