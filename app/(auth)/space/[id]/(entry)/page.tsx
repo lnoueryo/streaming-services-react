@@ -6,7 +6,7 @@ import { TurnCredential } from '@/repositories/signaling.repository'
 import { signalingRepositoryClient } from '@/lib/repositories/client/signaling.repository.client'
 import { useLobby } from './lobby-provider'
 import { useUser } from '@/app/(auth)/user-provider'
-import { roomRepositoryClient } from '@/lib/repositories/client/room.repository.client'
+import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import Lobby from './Lobby'
 import { useSignaling } from './signaling-provider'
 
@@ -25,7 +25,7 @@ export default function Page() {
   const localLobbyVideoRef = useRef<HTMLVideoElement>(null)
   const localRoomVideoRef = useRef<HTMLVideoElement>(null)
   const credentialRef = useRef<TurnCredential | null>(null)
-  const [roomState, setRoomState] = useState<
+  const [roomState, setSpaceState] = useState<
     'reception' | 'lobby' | 'room' | 'exit'
   >('reception')
 
@@ -36,11 +36,11 @@ export default function Page() {
   // useEffect(() => {
   //   console.log('connectionState changed:', connectionState)
   //   if (connectionState === 'pending') {
-  //     setRoomState('lobby')
+  //     setSpaceState('lobby')
   //   } else if (connectionState === 'stop') {
-  //     setRoomState('exit')
+  //     setSpaceState('exit')
   //   } else if (connectionState === 'ready') {
-  //     setRoomState('room')
+  //     setSpaceState('room')
   //   }
   // }, [connectionState])
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function Page() {
       await connectWS()
       credentialRef.current =
         await signalingRepositoryClient.generateTurnCredential()
-      setRoomState('lobby')
+      setSpaceState('lobby')
     } catch (e) {
       console.log('getUserMedia error:', e)
       return
@@ -89,7 +89,7 @@ export default function Page() {
   }
 
   const goBackToLobby = async () => {
-    const newLobby = await roomRepositoryClient.enterLobby(lobby.id)
+    const newLobby = await spaceRepositoryClient.enterLobby(lobby.id)
     setLobby(newLobby)
     await start()
   }
@@ -100,7 +100,7 @@ export default function Page() {
   return (
     <>
       {roomState === 'lobby' ? (
-        <Lobby setRoomState={setRoomState} />
+        <Lobby setSpaceState={setSpaceState} />
       ) : roomState === 'room' ? (
         <div className="relative w-full h-screen bg-black overflow-hidden">
           {/* Remote Grid（2人のときは縦並び、それ以降は通常） */}
@@ -240,7 +240,7 @@ export default function Page() {
                   await hangup()
                   localStreamRef.current?.getTracks().forEach((t) => t.stop())
                   localStreamRef.current = null
-                  setRoomState('exit')
+                  setSpaceState('exit')
                 }}
                 className="
                   flex items-center gap-1

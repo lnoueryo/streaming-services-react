@@ -1,5 +1,5 @@
 'use client'
-import { roomRepositoryClient } from '@/lib/repositories/client/room.repository.client'
+import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { authRepositoryClient } from '@/lib/repositories/client/auth.repository.client'
 
 import { useUser } from './user-provider'
@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation'
 export default function HomePage() {
   const user = useUser()
   const router = useRouter()
-  const handleCreateRoom = async () => {
-    const room = await roomRepositoryClient.createRoom()
-    router.push(`/room/${room.id}`)
+  const handleCreateSpace = async () => {
+    const space = await spaceRepositoryClient.createSpace()
+    router.push(`/space/${space.id}`)
   }
 
   const handleLogout = async () => {
@@ -27,7 +27,7 @@ export default function HomePage() {
         </p>
 
         <button
-          onClick={handleCreateRoom}
+          onClick={handleCreateSpace}
           className="bg-blue-600 text-white p-3 rounded"
         >
           ルーム作成

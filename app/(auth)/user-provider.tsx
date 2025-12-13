@@ -4,8 +4,9 @@ import { createContext, useContext } from 'react'
 
 export interface DecodedUser {
   uid: string
-  email: string
-  name?: string
+  email?: string
+  name: string
+  picture?: string
 }
 
 const UserContext = createContext<DecodedUser | null>(null)

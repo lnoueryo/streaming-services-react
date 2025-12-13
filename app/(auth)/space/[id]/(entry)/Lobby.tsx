@@ -1,16 +1,16 @@
 'use client'
-import { useLobby } from '@/app/(auth)/room/[id]/(join)/lobby-provider'
+import { useLobby } from '@/app/(auth)/space/[id]/(entry)/lobby-provider'
 import { ApiFetchError } from '@/lib/api/base-client/base-client'
-import { roomRepositoryClient } from '@/lib/repositories/client/room.repository.client'
+import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/atoms/modal'
 import { useSignaling } from './signaling-provider'
 import { useRouter } from 'next/navigation'
 
 export default function Lobby({
-  setRoomState
+  setSpaceState
 }: {
-  setRoomState: (state: 'room') => void
+  setSpaceState: (state: 'room') => void
 }) {
   const { lobby, setLobby } = useLobby()
   const router = useRouter()
@@ -29,14 +29,14 @@ export default function Lobby({
   }, [localVideoRef.current])
   const enterRoom = async (params?: { force: boolean }) => {
     try {
-      const lobbyRes = await roomRepositoryClient.enterRoom(lobby.id, params)
+      const lobbyRes = await spaceRepositoryClient.enterRoom(lobby.id, params)
       setLobby(lobbyRes)
       console.log(lobbyRes)
       if (lobbyRes.isJoined) {
         return setIsOpenRejoinConfirmation(true)
       }
       await connectPeer()
-      setRoomState('room')
+      setSpaceState('room')
     } catch (error) {
       if (error instanceof ApiFetchError) {
         if (error.statusCode === 404) {

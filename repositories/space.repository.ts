@@ -1,10 +1,10 @@
 import { BaseClient } from '@/lib/api/base-client/base-client'
 
-export type LobbyResponse = RoomResponse & {
+export type LobbyResponse = SpaceResponse & {
   isJoined: boolean
 }
 
-export type RoomResponse = {
+export type SpaceResponse = {
   id: string
   privacy: string
   users: {
@@ -15,26 +15,26 @@ export type RoomResponse = {
   }[]
 }
 
-export type RoomsResponse = {
-  items: RoomResponse[]
+export type SpacesResponse = {
+  items: SpaceResponse[]
   page: number
   limit: number
   total: number
   totalPages: number
 }
 
-export class RoomRepository {
+export class SpaceRepository {
   constructor(private client: BaseClient) {}
-  public async fetchPublicRooms(params: {
+  public async fetchPublicSpaces(params: {
     page: number
     limit: number
-  }): Promise<RoomsResponse> {
-    const res = await this.client.get(`/rooms/public`, params)
+  }): Promise<SpacesResponse> {
+    const res = await this.client.get(`/spaces/public`, params)
     return res && (await res.json())
   }
 
   public async enterLobby(id: string): Promise<LobbyResponse> {
-    const res = await this.client.get(`/rooms/${id}/lobby`)
+    const res = await this.client.get(`/spaces/${id}/lobby`)
     return res && (await res.json())
   }
 
@@ -42,12 +42,12 @@ export class RoomRepository {
     id: string,
     params?: { force: boolean }
   ): Promise<LobbyResponse> {
-    const res = await this.client.patch(`/rooms/${id}/room`, params)
+    const res = await this.client.patch(`/spaces/${id}/room`, params)
     return res && (await res.json())
   }
 
-  public async createRoom(): Promise<RoomResponse> {
-    const res = await this.client.post(`/rooms/create`, {})
+  public async createSpace(): Promise<SpaceResponse> {
+    const res = await this.client.post(`/spaces/create`, {})
     return res && (await res.json())
   }
 }
