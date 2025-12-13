@@ -34,6 +34,7 @@ export default function useSignaling(url: string) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionState>('stop');
 
+  // WS messageのハンドラー登録
   customMessageHandlers.current['offer'] = async (data) => {
     const offer = JSON.parse(data);
     console.log+("[WS] ← offer");
@@ -55,6 +56,7 @@ export default function useSignaling(url: string) {
       queuedRef.current.candidates.push(cand);
     }
   }
+
   const connectPeer = async () => {
     if (!wsOpen) {
       console.log("WS not open");
@@ -103,7 +105,8 @@ export default function useSignaling(url: string) {
     await createPeer()
     console.log('setup')
     await setupPeer()
-  };
+  }
+
   const setupPeer = async () => {
     const local = localStreamRef.current!;
     if (local) {
@@ -128,6 +131,7 @@ export default function useSignaling(url: string) {
     sendWS({ event: "offer" });
     console.log("[Peer] ready");
   }
+
   const hangup = async () => {
     await disconnectPeerConnection()
     if (localStreamRef.current) {
@@ -152,6 +156,7 @@ export default function useSignaling(url: string) {
     setConnectionState(state)
     console.log(state)
   }, [wsRef.current, pcRef.current]);
+
   return {
     connectWS,
     connectPeer,

@@ -19,6 +19,7 @@ export default function usePeer() {
   const onICECandidateHandler = useRef<(e: RTCPeerConnectionIceEvent) => void>(null)
   const retry = useRef(0);
   const maxRetry = 20;
+
   const createPeer = async () => {
     if (pcRef.current) {
       console.log("Peer already exists");
@@ -51,7 +52,6 @@ export default function usePeer() {
     }
     pc.onicecandidate = onICECandidateHandler.current
     retry.current = 0
-    console.log('created')
   }
 
   const recreatePeer = async () => {
