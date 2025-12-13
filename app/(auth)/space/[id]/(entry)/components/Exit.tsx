@@ -1,19 +1,20 @@
-"use client";
+'use client'
 
-import { spaceRepositoryClient } from "@/lib/repositories/client/space.repository.client";
-import { useRouter } from "next/navigation";
-import { useRoom } from "../room-provider";
+import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
+import { useRouter } from 'next/navigation'
+import { useRoom } from '../room-provider'
+import Button from '@/components/atoms/Button'
 
 export default function Exit({
   setSpaceState
 }: {
   setSpaceState: (state: 'reception') => void
 }) {
-  const router = useRouter();
-  const { room, setRoom } = useRoom();
-  const goHome = () => {
-    router.push("/");
-  };
+  const router = useRouter()
+  const { room, setRoom } = useRoom()
+  const goHome = async () => {
+    router.push('/')
+  }
 
   const goBackToLobby = async () => {
     const newLobby = await spaceRepositoryClient.enterLobby(room.id)
@@ -33,20 +34,22 @@ export default function Exit({
         </p>
 
         <div className="flex flex-col gap-3">
-            <button
-              onClick={goBackToLobby}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition"
-            >
-              再参加
-            </button>
-          <button
+          <Button
+            onClick={goBackToLobby}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition"
+            loading
+          >
+            再参加
+          </Button>
+          <Button
             onClick={goHome}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 rounded-lg transition"
+            loading
           >
             ホームへ戻る
-          </button>
+          </Button>
         </div>
       </div>
     </div>
-  );
+  )
 }

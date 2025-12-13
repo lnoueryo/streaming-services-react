@@ -4,8 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AuthService from '@/lib/auth/auth.service'
 import { authRepositoryClient } from '@/lib/repositories/client/auth.repository.client'
+import Button from '../atoms/Button'
+import { useLoading } from '@/app/LoadingContext'
 
 export default function Login({ next }: { next: string }) {
+  const { startLoading, endLoading } = useLoading()
   const router = useRouter()
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
@@ -16,11 +19,14 @@ export default function Login({ next }: { next: string }) {
     setError('')
 
     try {
+      startLoading()
       const user = await AuthService.signInWithEmail(email, password)
       router.push(next)
     } catch (err: any) {
       console.error(err)
       setError('ログインに失敗しました')
+    } finally {
+      endLoading()
     }
   }
 
@@ -28,6 +34,7 @@ export default function Login({ next }: { next: string }) {
     setError('')
 
     try {
+      startLoading()
       const user = await AuthService.signInWithGoogle()
       await authRepositoryClient.login(user.idToken)
       console.log('Google Login OK', user)
@@ -35,6 +42,8 @@ export default function Login({ next }: { next: string }) {
     } catch (err) {
       console.error(err)
       setError('Googleログインに失敗しました')
+    } finally {
+      endLoading()
     }
   }
 
@@ -61,17 +70,17 @@ export default function Login({ next }: { next: string }) {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded">
+        <Button type="submit" className="bg-blue-600 text-white p-2 rounded">
           ログイン
-        </button>
+        </Button>
       </form>
 
-      <button
+      <Button
         onClick={googleLogin}
         className="bg-red-600 text-white p-2 rounded"
       >
         Googleでログイン
-      </button>
+      </Button>
     </div>
   )
 }

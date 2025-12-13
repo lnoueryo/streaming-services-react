@@ -3,10 +3,11 @@ import { useRoom } from '@/app/(auth)/space/[id]/(entry)/room-provider'
 import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useEffect, useRef, useState } from 'react'
-import Modal from '@/components/atoms/modal'
+import Modal from '@/components/atoms/Modal'
 import { useSignaling } from '../signaling-provider'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/app/(auth)/user-provider'
+import Button from '@/components/atoms/Button'
 
 export default function Lobby({
   setSpaceState
@@ -79,51 +80,43 @@ export default function Lobby({
   }
   return (
     <>
-      <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-        <div>
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full h-full object-cover scale-x-[-1]"
-          />
-        </div>
-        <div className="bg-gray-800 w-full max-w-md rounded-xl shadow-2xl p-6 text-white">
-          <h2 className="text-lg font-semibold mb-4 text-center">
-            現在の参加者
-          </h2>
-          <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-10">
+        <video
+          ref={localVideoRef}
+          autoPlay
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover opacity-40 scale-x-[-1]"
+        />
+        <div className="relative bg-gray-900 rounded-2xl shadow-xl w-full max-w-md p-6 text-white">
+          <h2 className="text-2xl font-bold text-center mb-4">現在の参加者</h2>
+          <ul className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
             {room.participants
-              .filter((participant) => participant.id !== user.id)
+              .filter((p) => p.id !== user.id)
               .map((participant) => (
                 <li
                   key={participant.id}
-                  className="flex items-center gap-3 bg-gray-700 px-3 py-2 rounded-lg"
+                  className="flex items-center gap-3 bg-gray-800 px-3 py-2 rounded-lg"
                 >
                   <img
                     src={participant.image}
                     alt={participant.name}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500"
                   />
-                  <span className="text-sm">{participant.name}</span>
+                  <span className="text-sm font-medium">
+                    {participant.name}
+                  </span>
                 </li>
               ))}
           </ul>
-
           <div className="mt-6 flex justify-center">
-            <button
+            <Button
               onClick={async () => await enterRoom()}
-              className="
-                bg-blue-500 hover:bg-blue-600
-                text-white font-semibold
-                px-6 py-2 rounded-lg
-                transition-all
-              "
-              // disabled={roomState === 'exit'}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition-all"
+              loading
             >
-              参加
-            </button>
+              参加する
+            </Button>
           </div>
         </div>
       </div>
@@ -135,31 +128,33 @@ export default function Lobby({
             setIsRightAfterEntry(false)
           }}
         >
-          <h2 className="text-lg font-semibold mb-2">確認</h2>
-          <p className="mb-4">
-            別の端末で既に参加されているようです。こちらの端末に切り替えますか。
-          </p>
+          <div>
+            <h2 className="text-lg font-semibold mb-2">確認</h2>
+            <p className="mb-4">
+              別の端末で既に参加されているようです。こちらの端末に切り替えますか？
+            </p>
 
-          <div className="flex justify-end gap-2">
-            <button
-              className="px-3 py-1 bg-gray-700 rounded"
-              onClick={() => {
-                setIsOpenRejoinConfirmation(false)
-                setIsRightAfterEntry(false)
-              }}
-            >
-              キャンセル
-            </button>
-            <button
-              className="px-3 py-1 bg-red-500 rounded"
-              onClick={() => {
-                isRightAfterEntry
-                  ? enableEntry({ force: true })
-                  : enterRoom({ force: true })
-              }}
-            >
-              OK
-            </button>
+            <div className="flex justify-end gap-2">
+              <Button
+                className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded transition"
+                onClick={() => {
+                  setIsOpenRejoinConfirmation(false)
+                  setIsRightAfterEntry(false)
+                }}
+              >
+                キャンセル
+              </Button>
+              <Button
+                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition"
+                onClick={async () =>
+                  isRightAfterEntry
+                    ? await enableEntry({ force: true })
+                    : await enterRoom({ force: true })
+                }
+              >
+                OK
+              </Button>
+            </div>
           </div>
         </Modal>
       )}

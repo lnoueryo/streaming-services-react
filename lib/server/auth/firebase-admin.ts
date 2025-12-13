@@ -1,10 +1,5 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import {
-  Auth,
-  DecodedIdToken,
-  getAuth,
-  SessionCookieOptions
-} from 'firebase-admin/auth'
+import { Auth, getAuth, SessionCookieOptions } from 'firebase-admin/auth'
 const serviceAccount = require('../../../.credentials/firebase-admin.json')
 if (!getApps().length) {
   initializeApp({
@@ -17,12 +12,16 @@ class FirebaseAuth {
   public async decodeSessionCookie(
     token: string,
     checkRevoked?: boolean
-  ): Promise<{ id: string; email?: string; name: string; picture?: string }> {
-    const { uid, email, name, picture } = await this.auth.verifySessionCookie(
-      token,
-      checkRevoked
-    )
-    return { id: uid, email, name, picture }
+  ): Promise<{
+    id: string
+    email?: string
+    name: string
+    picture?: string
+    sub: string
+  }> {
+    const { uid, email, name, picture, sub } =
+      await this.auth.verifySessionCookie(token, checkRevoked)
+    return { id: uid, email, name, picture, sub }
   }
   public async verifySessionCookie(
     token: string,

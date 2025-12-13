@@ -11,7 +11,8 @@ export default async function LoginPage({
 }) {
   const header = await headers()
   const back = header.get('referer') || '/'
-  const next = header.get('next') || '/'
+  const params = await searchParams
+  const next = params.next || '/'
 
   const cookieStore = cookies()
   const cookie = await cookieStore

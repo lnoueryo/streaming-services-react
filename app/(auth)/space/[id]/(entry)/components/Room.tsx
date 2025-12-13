@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSignaling } from '../signaling-provider'
+import Button from '@/components/atoms/Button'
 
 export default function Room({
   setSpaceState
@@ -62,7 +63,7 @@ export default function Room({
                     }
                   }}
                 />
-                <button
+                <Button
                   className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
                   onClick={() => {
                     const video =
@@ -78,7 +79,7 @@ export default function Room({
                   }}
                 >
                   音声切替
-                </button>
+                </Button>
               </motion.div>
             ))}
           </AnimatePresence>
@@ -102,12 +103,12 @@ export default function Room({
             className="w-full h-full object-cover scale-x-[-1]"
           />
           {showLocal && (
-            <button
+            <Button
               onClick={() => setShowLocal(false)}
               className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded"
             >
               ×
-            </button>
+            </Button>
           )}
           <p className="text-[10px] text-white/70 absolute bottom-0 w-full text-center bg-black/30">
             あなたの映像
@@ -115,12 +116,12 @@ export default function Room({
         </div>
 
         {!showLocal && (
-          <button
+          <Button
             onClick={() => setShowLocal(true)}
             className="absolute bottom-3 right-3 bg-white/10 hover:bg-white/20 text-white px-3 py-2 text-xs rounded-lg shadow-xl"
           >
             あなたの映像を表示
-          </button>
+          </Button>
         )}
         {/* Bottom Control Bar */}
         <motion.div
@@ -135,7 +136,7 @@ export default function Room({
           "
         >
           <>
-            {/* <button
+            {/* <Button
               onClick={async() => await connectWS()}
               className="
                 flex items-center gap-1
@@ -145,8 +146,8 @@ export default function Room({
               "
             >
               WS
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={async() => await createPeer()}
               className="
                 flex items-center gap-1
@@ -156,8 +157,8 @@ export default function Room({
               "
             >
               Peer
-            </button> */}
-            <button
+            </Button> */}
+            <Button
               onClick={async () => {
                 await hangup()
                 localStreamRef.current?.getTracks().forEach((t) => t.stop())
@@ -172,8 +173,8 @@ export default function Room({
               "
             >
               切る
-            </button>
-            {/* <button
+            </Button>
+            {/* <Button
               onClick={async() => await closeWS()}
               className="
                 flex items-center gap-1
@@ -183,8 +184,8 @@ export default function Room({
               "
             >
               切る
-            </button> */}
-            {/* <button
+            </Button> */}
+            {/* <Button
               onClick={async () => await switchCamera()}
               className="
                 flex items-center gap-1
@@ -194,7 +195,7 @@ export default function Room({
               "
             >
               切り替え
-            </button> */}
+            </Button> */}
           </>
         </motion.div>
       </div>
