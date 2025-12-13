@@ -1,5 +1,5 @@
 'use client'
-import { useLobby } from '@/app/(auth)/space/[id]/(entry)/lobby-provider'
+import { useRoom } from '@/app/(auth)/space/[id]/(entry)/room-provider'
 import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useEffect, useRef, useState } from 'react'
@@ -12,12 +12,12 @@ export default function Lobby({
 }: {
   setSpaceState: (state: 'room') => void
 }) {
-  const { lobby, setLobby } = useLobby()
+  const { room, setRoom } = useRoom()
   const router = useRouter()
   const { localStreamRef, connectPeer } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
-    lobby.isJoined
+    room.isJoined
   )
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -29,10 +29,10 @@ export default function Lobby({
   }, [localVideoRef.current])
   const enterRoom = async (params?: { force: boolean }) => {
     try {
-      const lobbyRes = await spaceRepositoryClient.enterRoom(lobby.id, params)
-      setLobby(lobbyRes)
-      console.log(lobbyRes)
-      if (lobbyRes.isJoined) {
+      const roomRes = await spaceRepositoryClient.enterRoom(room.id, params)
+      setRoom(roomRes)
+      console.log(roomRes)
+      if (roomRes.isJoined) {
         return setIsOpenRejoinConfirmation(true)
       }
       await connectPeer()
@@ -67,17 +67,17 @@ export default function Lobby({
             現在の参加者
           </h2>
           <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
-            {lobby.users.map((user) => (
+            {room.participants.map((participant) => (
               <li
-                key={user.id}
+                key={participant.id}
                 className="flex items-center gap-3 bg-gray-700 px-3 py-2 rounded-lg"
               >
                 <img
-                  src={user.image}
-                  alt={user.name}
+                  src={participant.image}
+                  alt={participant.name}
                   className="w-10 h-10 rounded-full object-cover"
                 />
-                <span className="text-sm">{user.name}</span>
+                <span className="text-sm">{participant.name}</span>
               </li>
             ))}
           </ul>

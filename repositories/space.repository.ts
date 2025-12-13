@@ -1,18 +1,18 @@
 import { BaseClient } from '@/lib/api/base-client/base-client'
 
-export type LobbyResponse = SpaceResponse & {
+export type RoomResponse = Pick<SpaceResponse, 'id' | 'privacy'> & {
+  participants: {
+    id: string
+    name: string
+    email: string
+    image: string
+  }[]
   isJoined: boolean
 }
 
 export type SpaceResponse = {
   id: string
   privacy: string
-  users: {
-    id: string
-    name: string
-    email: string
-    image: string
-  }[]
 }
 
 export type SpacesResponse = {
@@ -33,7 +33,7 @@ export class SpaceRepository {
     return res && (await res.json())
   }
 
-  public async enterLobby(id: string): Promise<LobbyResponse> {
+  public async enterLobby(id: string): Promise<RoomResponse> {
     const res = await this.client.get(`/spaces/${id}/lobby`)
     return res && (await res.json())
   }
@@ -41,7 +41,7 @@ export class SpaceRepository {
   public async enterRoom(
     id: string,
     params?: { force: boolean }
-  ): Promise<LobbyResponse> {
+  ): Promise<RoomResponse> {
     const res = await this.client.patch(`/spaces/${id}/room`, params)
     return res && (await res.json())
   }

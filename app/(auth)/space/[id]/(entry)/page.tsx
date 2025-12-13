@@ -4,14 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TurnCredential } from '@/repositories/signaling.repository'
 import { signalingRepositoryClient } from '@/lib/repositories/client/signaling.repository.client'
-import { useLobby } from './lobby-provider'
+import { useRoom } from './room-provider'
 import { useUser } from '@/app/(auth)/user-provider'
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import Lobby from './Lobby'
 import { useSignaling } from './signaling-provider'
 
 export default function Page() {
-  const { lobby, setLobby } = useLobby()
+  const { room, setRoom } = useRoom()
   const userRes = useUser()
   const {
     remoteVideos,
@@ -25,18 +25,18 @@ export default function Page() {
   const localLobbyVideoRef = useRef<HTMLVideoElement>(null)
   const localRoomVideoRef = useRef<HTMLVideoElement>(null)
   const credentialRef = useRef<TurnCredential | null>(null)
-  const [roomState, setSpaceState] = useState<
+  const [spaceState, setSpaceState] = useState<
     'reception' | 'lobby' | 'room' | 'exit'
   >('reception')
 
   useEffect(() => {
-    console.log(lobby)
+    console.log(room)
     start()
   }, [])
   // useEffect(() => {
   //   console.log('connectionState changed:', connectionState)
   //   if (connectionState === 'pending') {
-  //     setSpaceState('lobby')
+  //     setSpaceState('room')
   //   } else if (connectionState === 'stop') {
   //     setSpaceState('exit')
   //   } else if (connectionState === 'ready') {
@@ -52,7 +52,7 @@ export default function Page() {
         setVideoStream(localRoomVideoRef.current)
       }
     })
-  }, [roomState])
+  }, [spaceState])
 
   const setVideoStream = (video: HTMLVideoElement) => {
     video.pause()
@@ -61,11 +61,11 @@ export default function Page() {
     video.play().catch(() => {})
   }
   customMessageHandlers.current['access'] = (data) => {
-    const users = JSON.parse(data)
-    console.log('[WS] ← users: ', users)
-    setLobby({
-      ...lobby,
-      users
+    const participants = JSON.parse(data)
+    console.log('[WS] ← participants: ', participants)
+    setRoom({
+      ...room,
+      participants
     })
   }
   const start = async () => {
@@ -89,8 +89,8 @@ export default function Page() {
   }
 
   const goBackToLobby = async () => {
-    const newLobby = await spaceRepositoryClient.enterLobby(lobby.id)
-    setLobby(newLobby)
+    const newLobby = await spaceRepositoryClient.enterLobby(room.id)
+    setRoom(newLobby)
     await start()
   }
 
@@ -99,9 +99,9 @@ export default function Page() {
   // ============================================================
   return (
     <>
-      {roomState === 'lobby' ? (
+      {spaceState === 'lobby' ? (
         <Lobby setSpaceState={setSpaceState} />
-      ) : roomState === 'room' ? (
+      ) : spaceState === 'room' ? (
         <div className="relative w-full h-screen bg-black overflow-hidden">
           {/* Remote Grid（2人のときは縦並び、それ以降は通常） */}
           <motion.div
@@ -276,7 +276,7 @@ export default function Page() {
             </>
           </motion.div>
         </div>
-      ) : roomState === 'exit' ? (
+      ) : spaceState === 'exit' ? (
         <div>
           <button onClick={async () => await goBackToLobby()}>再参加</button>
         </div>
