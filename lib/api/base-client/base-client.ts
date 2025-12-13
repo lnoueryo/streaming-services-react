@@ -38,6 +38,14 @@ export class BaseClient {
     })
   }
 
+  patch(url: string, body?: any) {
+    return this.apiFetch(url, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   put(url: string, body?: any) {
     return this.apiFetch(url, {
       method: 'PUT',

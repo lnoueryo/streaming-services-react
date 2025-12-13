@@ -2,30 +2,25 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
-import output from "@/config";
 import { TurnCredential } from "@/repositories/signaling.repository";
 import { signalingRepositoryClient } from "@/lib/repositories/client/signaling.repository.client";
 import { useLobby } from "./lobby-provider";
 import { useUser } from "@/app/(auth)/user-provider";
 import { roomRepositoryClient } from "@/lib/repositories/client/room.repository.client";
-import { ApiFetchError } from "@/lib/api/base-client/base-client";
-import Modal from "@/components/atoms/modal";
-import useSignaling from "@/hooks/use-signaling";
+import Lobby from "./Lobby";
+import { useSignaling } from "./signaling-provider";
 
 export default function Page() {
-  const lobbyRes = useLobby()
+  const { lobby, setLobby } = useLobby()
   const userRes = useUser()
   const {
     remoteVideos,
     customMessageHandlers,
     localStreamRef,
     connectWS,
-    connectPeer,
     hangup,
-  } = useSignaling(`${output.signalingOrigin}/ws/live/1`)
-  const [lobby, setLobby] = useState(lobbyRes);
+  } = useSignaling()
   const [showLocal, setShowLocal] = useState(true);
-  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(lobby.isJoined);
   const remoteCount = remoteVideos.length;
   const localLobbyVideoRef = useRef<HTMLVideoElement>(null);
   const localRoomVideoRef = useRef<HTMLVideoElement>(null);
@@ -47,26 +42,29 @@ export default function Page() {
   //   }
   // }, [connectionState])
   useEffect(() => {
-    if (localLobbyVideoRef.current) {
-      localLobbyVideoRef.current.srcObject = localStreamRef.current;
-      localLobbyVideoRef.current.onloadedmetadata = () => {
-        localLobbyVideoRef.current?.play().catch(() => {});
-      };
-    }
-    if (localRoomVideoRef.current) {
-      localRoomVideoRef.current.srcObject = localStreamRef.current;
-      localRoomVideoRef.current.onloadedmetadata = () => {
-        localRoomVideoRef.current?.play().catch(() => {});
-      };
-    }
+    requestAnimationFrame(() => {
+      if (localLobbyVideoRef.current) {
+        setVideoStream(localLobbyVideoRef.current);
+      }
+      if (localRoomVideoRef.current) {
+        setVideoStream(localRoomVideoRef.current);
+      }
+    })
   }, [roomState])
+
+  const setVideoStream = (video: HTMLVideoElement) => {
+    video.pause();
+    video.srcObject = null;
+    video.srcObject = localStreamRef.current;
+    video.play().catch(() => {});
+  };
   customMessageHandlers.current['access'] = (data) => {
     const users = JSON.parse(data);
     console.log("[WS] ← users: ", users)
-    setLobby({
+    setLobby(({
       ...lobby,
       users,
-    })
+    }))
   }
   const start = async () => {
     try {
@@ -86,43 +84,10 @@ export default function Page() {
     });
     localStreamRef.current = stream;
   }
-  const joinRoom = async () => {
-    try {
-      const lobbyRes = await roomRepositoryClient.enterLobby(lobby.id)
-      setLobby(lobbyRes)
-      // if (!wsRef.current) {
-      //   await connectWS()
-      // }
-      // await startCamera()
-      if (roomState === 'exit') {
-        console.log("WS not open");
-        return;
-      }
-      await connectPeer()
-      setRoomState('room')
-    } catch (error) {
-      if (error instanceof ApiFetchError) {
-        if (error.statusCode === 409) {
-          console.log('409')
-          // setRejoinModalFunc(async () => {
-          //   await rejoin(connectPeer)
-          //   setIsInRoom(true)
-          // })
-          // setIsOpenRejoinConfirmation(true)
-        }
-        console.warn(error)
-        return
-      }
-      alert('予期せぬエラーが発生しました')
-    } finally {
-      // setIsOpenRejoinConfirmation(false);
-    }
-  }
 
   const goBackToLobby = async () => {
-    const lobbyRes = await roomRepositoryClient.enterLobby(lobby.id)
-    setLobby(lobbyRes)
-    setRoomState('lobby')
+    const newLobby = await roomRepositoryClient.enterLobby(lobby.id)
+    setLobby(newLobby)
     await start()
   }
 
@@ -133,53 +98,7 @@ export default function Page() {
     <>
       {
         roomState === 'lobby' ?
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div>
-            <video
-              ref={localLobbyVideoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full object-cover scale-x-[-1]"
-            />
-          </div>
-          <div className="bg-gray-800 w-full max-w-md rounded-xl shadow-2xl p-6 text-white">
-            <h2 className="text-lg font-semibold mb-4 text-center">
-              現在の参加者
-            </h2>
-            <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
-              {lobby.users.map((user) => (
-                <li
-                  key={user.id}
-                  className="flex items-center gap-3 bg-gray-700 px-3 py-2 rounded-lg"
-                >
-                  <img
-                    src={user.image}
-                    alt={user.name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                  <span className="text-sm">{user.name}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={async () => await joinRoom()}
-                className="
-                  bg-blue-500 hover:bg-blue-600
-                  text-white font-semibold
-                  px-6 py-2 rounded-lg
-                  transition-all
-                "
-                // disabled={roomState === 'exit'}
-              >
-                参加
-              </button>
-            </div>
-
-          </div>
-        </div>
+        <Lobby setRoomState={setRoomState} />
         : roomState === 'room' ?
         <div className="relative w-full h-screen bg-black overflow-hidden">
           {/* Remote Grid（2人のときは縦並び、それ以降は通常） */}
@@ -314,6 +233,8 @@ export default function Page() {
               <button
                 onClick={async() => {
                   await hangup()
+                  localStreamRef.current?.getTracks().forEach((t) => t.stop())
+                  localStreamRef.current = null
                   setRoomState('exit')
                 }}
                 className="
@@ -355,28 +276,6 @@ export default function Page() {
           <button onClick={async () => await goBackToLobby()}>再参加</button>
         </div>
         : null
-      }
-      {
-        isOpenRejoinConfirmation &&
-        <Modal open={isOpenRejoinConfirmation} onClose={() => setIsOpenRejoinConfirmation(false)}>
-          <h2 className="text-lg font-semibold mb-2">確認</h2>
-          <p className="mb-4">別の端末で既に参加されているようです。こちらの端末に切り替えますか。</p>
-
-          <div className="flex justify-end gap-2">
-            <button
-              className="px-3 py-1 bg-gray-700 rounded"
-              onClick={() => setIsOpenRejoinConfirmation(false)}
-            >
-              キャンセル
-            </button>
-            <button
-              className="px-3 py-1 bg-red-500 rounded"
-              onClick={() => rejoin()}
-            >
-              OK
-            </button>
-          </div>
-        </Modal>
       }
     </>
   );

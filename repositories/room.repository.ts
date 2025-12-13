@@ -31,12 +31,12 @@ export class RoomRepository {
   }
 
   public async enterLobby(id: string): Promise<LobbyResponse> {
-    const res = await this.client.put(`/rooms/${id}/join`)
+    const res = await this.client.get(`/rooms/${id}/lobby`)
     return res && await res.json();
   }
 
-  public async rejoinRoom(id: string): Promise<RoomResponse> {
-    const res = await this.client.put(`/rooms/${id}/join/replace`)
+  public async enterRoom(id: string, params?: { force: boolean }): Promise<LobbyResponse> {
+    const res = await this.client.patch(`/rooms/${id}/room`, params)
     return res && await res.json();
   }
 
