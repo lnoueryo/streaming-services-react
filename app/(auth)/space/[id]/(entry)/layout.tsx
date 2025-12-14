@@ -11,7 +11,7 @@ export default async function SpaceAuthLayout({
   params
 }: {
   children: React.ReactNode
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   const _params = await params
   const id = String(_params.id)

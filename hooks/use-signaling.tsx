@@ -84,6 +84,7 @@ export default function useSignaling(url: string) {
       if (pcRef.current) {
         if (await onOriginalICEConnectionStateHandler(e)) {
           await setupPeer()
+          return true
         }
       }
     }
@@ -99,6 +100,7 @@ export default function useSignaling(url: string) {
       if (pcRef.current) {
         if (await onOriginalConnectionStateHandler(e)) {
           await setupPeer()
+          return true
         }
       }
     }
