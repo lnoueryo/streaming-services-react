@@ -56,8 +56,6 @@ export default function Lobby({
   const enterRoom = async (params?: { force: boolean }) => {
     setIsRightAfterEntry(false)
     const isEntryReady = await enableEntry(params)
-    console.log('isRightAfterEntry:', isRightAfterEntry)
-    console.log('isEntryReady:', isEntryReady)
     if (!isEntryReady) {
       return
     }

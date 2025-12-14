@@ -101,7 +101,7 @@ export default function useWebsocket(url: string) {
       } catch (error) {
         await reconnectWS()
       }
-    }, 2000)
+    }, 1000)
   }
 
   const disconnectWSConnection = () => {
