@@ -19,7 +19,7 @@ export default function useSignaling(url: string) {
     handleOffer,
     disconnectPeerConnection,
     pcRef,
-    remoteVideos,
+    remoteStreams,
     onICECandidateHandler,
     onICEConnectionStateHandler,
     onOriginalICEConnectionStateHandler,
@@ -166,7 +166,7 @@ export default function useSignaling(url: string) {
     connectWS,
     connectPeer,
     localStreamRef,
-    remoteVideos,
+    remoteStreams,
     connectionState,
     customMessageHandlers,
     hangup

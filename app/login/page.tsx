@@ -1,4 +1,4 @@
-import Login from '@/components/organisms/Login'
+import Login from './Login'
 import { auth } from '@/lib/server/auth/firebase-admin'
 import { headers } from 'next/headers'
 import { cookies } from 'next/headers'

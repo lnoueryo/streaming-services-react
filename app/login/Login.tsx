@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AuthService from '@/lib/auth/auth.service'
 import { authRepositoryClient } from '@/lib/repositories/client/auth.repository.client'
-import Button from '../atoms/Button'
+import Button from '../../components/atoms/Button'
 import { useLoading } from '@/app/LoadingContext'
 import { logger } from '@/lib/logger'
 
