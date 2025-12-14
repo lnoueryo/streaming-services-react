@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/server/auth/firebase-admin";
+import output from "@/config";
 
 export async function GET(req: Request) {
   return NextResponse.json({ data: 'Hello World' }, { status: 200 });
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      domain: "localtest.me",
+      domain: output.domain,
       path: "/",
       maxAge: expiresIn / 1000,
     });

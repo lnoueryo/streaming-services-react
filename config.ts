@@ -12,6 +12,7 @@ type ConfigEnv = {
   }
   signalingOrigin: string
   loggerLevel: string
+  domain: string
 }
 type STAGE = 'development' | 'production'
 
@@ -24,6 +25,7 @@ const configEnvs: { [K in STAGE]: ConfigEnv } = {
     },
     signalingOrigin: 'wss://streaming-signaling.localtest.me',
     loggerLevel: 'debug',
+    domain: 'localtest.me',
   },
   production: {
     streamingApiFrontendOrigin: 'https://streaming.jounetsism.biz',
@@ -33,6 +35,7 @@ const configEnvs: { [K in STAGE]: ConfigEnv } = {
     },
     signalingOrigin: 'wss://streaming-signaling.jounetsism.biz',
     loggerLevel: 'debug',
+    domain: 'jounetsism.biz',
   },
 }
 const env = (process.env.NODE_ENV || 'development') as STAGE

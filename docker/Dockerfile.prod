@@ -1,49 +1,48 @@
 # ----------------------------
-#  Base (高速化用底レイヤー)
+# Base（build 専用）
 # ----------------------------
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# pnpm の方が圧倒的に速いので使う（npm の3倍速）
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# pnpm を固定バージョンで有効化（build 用）
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 
 
 # ----------------------------
-#  Dependencies キャッシュ
+# Dependencies
 # ----------------------------
 FROM base AS deps
 
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 
 # ----------------------------
-#  Build
+# Build
 # ----------------------------
 FROM base AS builder
 
-ENV NODE_ENV=production
-
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
 RUN pnpm build
 
 
 # ----------------------------
-#  Production Runner
+# Runtime
 # ----------------------------
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# ✅ runtime では pnpm を明示インストール（最重要）
+RUN npm install -g pnpm@9.12.0
 
 ENV NODE_ENV=production
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/public ./public
-COPY package.json ./
+COPY --from=builder /app/.next ./.next
+COPY --from=deps /app/node_modules ./node_modules
 
 EXPOSE 3000
+
 CMD ["pnpm", "start"]
