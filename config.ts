@@ -31,7 +31,7 @@ const configEnvs: { [K in STAGE]: ConfigEnv } = {
     streamingApiFrontendOrigin: 'https://streaming.jounetsism.biz',
     streamingBackendApiOrigin: {
       client: 'https://streaming-api.jounetsism.biz',
-      server: 'http://streaming-backend":4000',
+      server: 'http://streaming-backend:4000',
     },
     signalingOrigin: 'wss://streaming-signaling.jounetsism.biz',
     loggerLevel: 'debug',
