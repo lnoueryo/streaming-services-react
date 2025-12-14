@@ -70,7 +70,13 @@ export default function Room({
 
   return (
     <>
-      <div className="relative w-full h-[calc(var(--vh,100vh))] bg-black overflow-hidden">
+      <div className="
+        relative w-full
+        max-sm:h-[calc(var(--vh,100vh))]
+        md:h-screen
+        bg-black
+        overflow-hidden
+      ">
         {/* Remote Grid */}
         <motion.div
           layout

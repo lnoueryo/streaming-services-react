@@ -107,8 +107,15 @@ export default function Lobby({
           </ul>
           <div className="mt-6 flex justify-center">
             <Button
+              onClick={async () => router.push('/')}
+              className="mr-4 bg-dark border hover:bg-neutral-secondary-medium text-white font-semibold px-4 py-2 rounded-lg transition-all"
+              loading
+            >
+              ホームに戻る
+            </Button>
+            <Button
               onClick={async () => await enterRoom()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition-all"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-all"
               loading
             >
               参加する
