@@ -1,9 +1,10 @@
 import { logger } from '@/lib/logger'
 import { TurnCredential } from '@/repositories/signaling.repository'
 import { useEffect, useRef, useState } from 'react'
-export type RemoteVideo = {
+export type RemoteStream = {
   id: string
   stream: MediaStream
+  streamId: string
 }
 const config: RTCConfiguration = {
   iceTransportPolicy: 'all',
@@ -11,7 +12,7 @@ const config: RTCConfiguration = {
 }
 export default function usePeer() {
   const pcRef = useRef<RTCPeerConnection | null>(null)
-  const [remoteVideos, setRemoteVideos] = useState<RemoteVideo[]>([])
+  const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([])
   const credentialRef = useRef<TurnCredential | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
   const onTrackHandler = useRef(onOriginalTrackHandler)
@@ -69,7 +70,7 @@ export default function usePeer() {
   }
 
   const recreatePeer = async () => {
-    setRemoteVideos([])
+    setRemoteStreams([])
     if (retry.current >= maxRetry) {
       logger.error('WS failed to reconnect.')
       return false
@@ -169,14 +170,15 @@ export default function usePeer() {
     }
     const stream = evt.streams[0] || new MediaStream([evt.track])
     const id = stream.id + '_' + evt.track.id
+    const streamId = stream.id
 
-    setRemoteVideos((prev) => {
+    setRemoteStreams((prev) => {
       if (prev.some((v) => v.id === id)) return prev
-      return [...prev, { id, stream }]
+      return [...prev, { id, stream, streamId }]
     })
 
     evt.track.onended = () => {
-      setRemoteVideos((prev) => prev.filter((v) => v.id !== id))
+      setRemoteStreams((prev) => prev.filter((v) => v.id !== id))
     }
 
     stream.onremovetrack = ({ track }) => {
@@ -189,7 +191,7 @@ export default function usePeer() {
         performance.now()
       )
       if (track.id === evt.track.id) {
-        setRemoteVideos((prev) => prev.filter((v) => v.id !== id))
+        setRemoteStreams((prev) => prev.filter((v) => v.id !== id))
       }
     }
   }
@@ -206,7 +208,7 @@ export default function usePeer() {
     onICECandidateHandler,
     onICEConnectionStateHandler,
     onConnectionStateHandler,
-    remoteVideos,
-    setRemoteVideos
+    remoteStreams,
+    setRemoteStreams
   }
 }
