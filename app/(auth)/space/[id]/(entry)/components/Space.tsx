@@ -8,6 +8,7 @@ import Lobby from './Lobby'
 import { useSignaling } from '../signaling-provider'
 import Room from './Room'
 import Exit from './Exit'
+import { logger } from '@/lib/logger'
 
 export default function SpacePage() {
   const { room, setRoom } = useRoom()
@@ -23,7 +24,7 @@ export default function SpacePage() {
     setSpaceState('exit')
   }
   useEffect(() => {
-    console.log('spaceState changed:', spaceState)
+    logger.info('Space', `spaceState changed: ${spaceState}`)
     if (spaceState === 'reception') {
       start()
     }
@@ -31,7 +32,7 @@ export default function SpacePage() {
 
   customMessageHandlers.current['access'] = (data) => {
     const participants = JSON.parse(data)
-    console.log('[WS] ← participants: ', participants)
+    logger.log('WS EVENT', 'access: ', participants)
     setRoom({
       ...room,
       participants
@@ -45,7 +46,7 @@ export default function SpacePage() {
         await signalingRepositoryClient.generateTurnCredential()
       setSpaceState('lobby')
     } catch (e) {
-      console.log('getUserMedia error:', e)
+      logger.error('getUserMedia error:', e)
       return
     }
   }

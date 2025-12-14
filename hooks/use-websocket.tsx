@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useEffect, useRef, useState } from 'react'
 export type RemoteVideoItem = {
   id: string
@@ -21,7 +22,7 @@ export default function useWebsocket(url: string) {
   const sendWS = (msg: any) => {
     const ws = wsRef.current
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.log(
+      logger.debug(
         '%c[WS SEND ERROR] ws not open',
         'color: orange',
         performance.now(),
@@ -34,7 +35,7 @@ export default function useWebsocket(url: string) {
 
   const connectWS = (timeoutMs = 5000) => {
     if (wsOpen) {
-      console.log(
+      logger.debug(
         '%c[WS ALREADY OPEN]',
         'color: #c6c623ff',
         performance.now(),
@@ -51,16 +52,16 @@ export default function useWebsocket(url: string) {
       }, timeoutMs)
 
       ws.onopen = () => {
-        console.log('%c[WS OPEN]', 'color: #4caf50', performance.now(), url)
+        logger.info('WS OPEN', performance.now(), url)
         clearTimeout(timer)
         retry.current = 0
         ws.onclose = (e) => {
-          console.log('%c[WS CLOSE]', 'color: #4caf50', performance.now(), url)
+          logger.info('[WS CLOSE]', performance.now(), url)
           setWsOpen(false)
           onClose.current(e)
         }
         ws.onerror = (e) => {
-          console.log('%c[WS ERROR]', 'color: orange', e)
+          logger.error('[WS ERROR]', performance.now(), url, e)
           onError.current(e)
         }
         setWsOpen(true)
@@ -70,11 +71,11 @@ export default function useWebsocket(url: string) {
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data)
         if (!msg.event) return
-        console.log('[WS EVENT] ', msg.event)
+        logger.debug('[WS EVENT] ', msg.event)
         if (customMessageHandlers.current[msg.event]) {
           customMessageHandlers.current[msg.event](msg.data)
         } else {
-          console.log('[WS] unknown event:', msg.event)
+          logger.warn('WS', 'unknown event:', msg.event)
         }
       }
 
@@ -84,13 +85,13 @@ export default function useWebsocket(url: string) {
 
   const reconnectWS = async () => {
     if (retry.current >= maxRetry) {
-      console.error('WS failed to reconnect.')
+      logger.error('WS failed to reconnect.')
       return
     }
     retry.current++
-    console.log('%c[RECONNECT SCHEDULED]', 'color:orange', performance.now())
+    logger.debug('%c[RECONNECT SCHEDULED]', 'color:orange', performance.now())
     setTimeout(async () => {
-      console.log(
+      logger.log(
         '%c[RECONNECTING...]',
         'color:orange',
         `${retry.current}/${maxRetry}`,

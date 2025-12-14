@@ -47,7 +47,6 @@ export default function Lobby({
           router.push('/')
           return
         }
-        console.warn(error)
         return
       }
       alert('予期せぬエラーが発生しました')
@@ -70,7 +69,6 @@ export default function Lobby({
           router.push('/')
           return
         }
-        console.warn(error)
         return
       }
       alert('予期せぬエラーが発生しました')

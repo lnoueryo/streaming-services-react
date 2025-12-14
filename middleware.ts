@@ -16,7 +16,7 @@ export function middleware(req: NextRequest) {
 
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-url', next);
-console.log(' middleware next:', next)
+
   const session = req.cookies.get('session')?.value;
   if (session) {
     return NextResponse.next({

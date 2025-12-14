@@ -6,6 +6,7 @@ import AuthService from '@/lib/auth/auth.service'
 import { authRepositoryClient } from '@/lib/repositories/client/auth.repository.client'
 import Button from '../atoms/Button'
 import { useLoading } from '@/app/LoadingContext'
+import { logger } from '@/lib/logger'
 
 export default function Login({ next }: { next: string }) {
   const { startLoading, endLoading } = useLoading()
@@ -23,7 +24,7 @@ export default function Login({ next }: { next: string }) {
       const user = await AuthService.signInWithEmail(email, password)
       router.push(next)
     } catch (err: any) {
-      console.error(err)
+      logger.error(err)
       setError('ログインに失敗しました')
     } finally {
       endLoading()
@@ -37,10 +38,10 @@ export default function Login({ next }: { next: string }) {
       startLoading()
       const user = await AuthService.signInWithGoogle()
       await authRepositoryClient.login(user.idToken)
-      console.log('Google Login OK', user)
+      logger.debug('Login', 'Google Login OK', user)
       router.push(next)
     } catch (err) {
-      console.error(err)
+      logger.error(err)
       setError('Googleログインに失敗しました')
     } finally {
       endLoading()

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { TurnCredential } from '@/repositories/signaling.repository'
 import { useEffect, useRef, useState } from 'react'
 export type RemoteVideo = {
@@ -25,7 +26,7 @@ export default function usePeer() {
 
   const createPeer = async () => {
     if (pcRef.current) {
-      console.log('Peer already exists')
+      logger.warn('PC', 'Peer already exists')
       return
     }
 
@@ -37,22 +38,22 @@ export default function usePeer() {
     const local = localStreamRef.current
     if (local) {
       local.getTracks().forEach((t) => pc.addTrack(t, local))
-      console.log('[Peer] local tracks added')
+      logger.debug('PC', 'local tracks added')
     }
 
     pc.oniceconnectionstatechange = onICEConnectionStateHandler.current
     pc.onconnectionstatechange = onConnectionStateHandler.current
     pc.onsignalingstatechange = () => {
-      console.log(
-        '%c[SIGNALING]',
+      logger.debug(
+        'PC SignalStatechange',
         'color: cyan',
         performance.now(),
         pc.signalingState
       )
     }
     pc.onicegatheringstatechange = () => {
-      console.log(
-        '%c[ICE GATHERING]',
+      logger.debug(
+        'PC ICEGatheringStatechange',
         'color: purple',
         performance.now(),
         pc.iceGatheringState
@@ -70,16 +71,16 @@ export default function usePeer() {
   const recreatePeer = async () => {
     setRemoteVideos([])
     if (retry.current >= maxRetry) {
-      console.error('WS failed to reconnect.')
+      logger.error('WS failed to reconnect.')
       return false
     }
     retry.current++
-    console.log('%c[RECONNECT SCHEDULED]', 'color:orange', performance.now())
+    logger.debug('%RECONNECT SCHEDULED', performance.now())
     return new Promise<boolean>((resolve) => {
       setTimeout(async () => {
-        console.log(
-          '%c[RECONNECTING...]',
-          'color:orange',
+        logger.log(
+          'PC',
+          'RECONNECTING...',
           `${retry.current}/${maxRetry}`,
           performance.now()
         )
@@ -99,10 +100,10 @@ export default function usePeer() {
       await pc.setRemoteDescription(offer)
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
-      console.log('[Peer] → answer')
+      logger.debug('PC', 'answer')
       return answer
     } catch (e) {
-      console.log('handleOffer error:', e)
+      logger.error('handleOffer error:', e)
     }
   }
 
@@ -125,15 +126,14 @@ export default function usePeer() {
   }, [])
 
   async function onOriginalICEConnectionStateHandler(evt: Event) {
-    console.log(
-      '%c[ICE CONNECTION]',
-      'color: violet',
+    logger.debug(
+      'PC ICE CONNECTION',
       performance.now(),
       pcRef.current?.iceConnectionState
     )
 
     if (pcRef.current?.iceConnectionState === 'failed') {
-      console.warn('ICE failed → recreatePeer()')
+      logger.debug('ICE failed → recreatePeer()')
       pcRef.current.close()
       pcRef.current = null
       return await recreatePeer()
@@ -141,15 +141,14 @@ export default function usePeer() {
   }
 
   async function onOriginalConnectionStateHandler(evt: Event) {
-    console.log(
+    logger.info(
       '%c[PC CONNECTION]',
-      'color: yellow',
       performance.now(),
       pcRef.current?.connectionState
     )
 
     if (pcRef.current?.connectionState === 'failed') {
-      console.warn('❌ PeerConnection failed — restarting...')
+      logger.debug('PC', '❌ PeerConnection failed — restarting...')
       pcRef.current.close()
       pcRef.current = null
       return await recreatePeer()
@@ -157,6 +156,14 @@ export default function usePeer() {
   }
 
   function onOriginalTrackHandler(evt: RTCTrackEvent) {
+    logger.info(
+      'PC REMOTE TRACK RECEIVED',
+      'color: #00bcd4',
+      evt.streams[0]?.id,
+      evt.track.kind,
+      evt.track.id,
+      performance.now()
+    )
     if (evt.track.kind !== 'video') {
       return
     }
@@ -173,6 +180,14 @@ export default function usePeer() {
     }
 
     stream.onremovetrack = ({ track }) => {
+      logger.info(
+        'PC REMOTE REMOVED',
+        'color: #ff8a65',
+        stream.id,
+        track.kind,
+        track.id,
+        performance.now()
+      )
       if (track.id === evt.track.id) {
         setRemoteVideos((prev) => prev.filter((v) => v.id !== id))
       }

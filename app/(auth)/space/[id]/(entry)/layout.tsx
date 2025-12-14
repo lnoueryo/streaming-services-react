@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { RoomProvider } from './room-provider'
 import { SignalingProvider } from './signaling-provider'
 import output from '@/config'
+import { logger } from '@/lib/logger'
 
 export default async function SpaceAuthLayout({
   children,
@@ -24,12 +25,12 @@ export default async function SpaceAuthLayout({
       </RoomProvider>
     )
   } catch (error) {
-    console.log(error)
     if (error instanceof ApiFetchError) {
       if (error.statusCode === 404) {
         return notFound()
       }
     }
+    logger.error(error)
     throw error
   }
 }

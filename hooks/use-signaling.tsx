@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import useWebsocket from './use-websocket'
 import usePeer from './use-peer'
+import { logger } from '@/lib/logger'
 
 type ConnectionState = 'stop' | 'pending' | 'ready' | 'unstable'
 
@@ -37,7 +38,7 @@ export default function useSignaling(url: string) {
   // WS messageのハンドラー登録
   customMessageHandlers.current['offer'] = async (data) => {
     const offer = JSON.parse(data)
-    console.log + '[WS] ← offer'
+    logger.debug + '[WS] ← offer'
     if (pcRef.current) {
       const answer = await handleOffer(offer)
       sendWS({ event: 'answer', data: JSON.stringify(answer) })
@@ -47,11 +48,11 @@ export default function useSignaling(url: string) {
   }
   customMessageHandlers.current['candidate'] = (data) => {
     const cand = JSON.parse(data)
-    console.log('[WS] ← candidate')
+    logger.debug('[WS] ← candidate')
     if (pcRef.current) {
       pcRef.current
         .addIceCandidate(cand)
-        .catch((e) => console.log('addIceCandidate err:', e))
+        .catch((e) => logger.error('addIceCandidate err:', e))
     } else {
       queuedRef.current.candidates.push(cand)
     }
@@ -59,10 +60,10 @@ export default function useSignaling(url: string) {
 
   const connectPeer = async () => {
     if (!wsOpen) {
-      console.log('WS not open')
+      logger.debug('WS not open')
       return
     }
-    console.log('set event')
+
     onICECandidateHandler.current = (e) => {
       if (e.candidate) {
         sendWS({
@@ -101,22 +102,21 @@ export default function useSignaling(url: string) {
         }
       }
     }
-    console.log('createPeer')
     await createPeer()
-    console.log('setup')
     await setupPeer()
+    logger.info('[Peer] ready')
   }
 
   const setupPeer = async () => {
     const local = localStreamRef.current!
     if (local) {
       local.getTracks().forEach((t) => pcRef.current?.addTrack(t, local))
-      console.log('[Peer] local tracks added')
+      logger.debug('[Peer] local tracks added')
     }
 
     if (queuedRef.current.offer) {
       const answer = await handleOffer(queuedRef.current.offer)
-      console.log('answer', answer)
+      logger.debug('answer', answer)
       sendWS({ event: 'answer', data: JSON.stringify(answer) })
       queuedRef.current.offer = null
     }
@@ -125,12 +125,10 @@ export default function useSignaling(url: string) {
     for (const c of queuedRef.current.candidates) {
       await pcRef.current
         ?.addIceCandidate(c)
-        .catch((e) => console.log('queued ICE err:', e))
+        .catch((e) => logger.error('queued ICE err:', e))
     }
     queuedRef.current.candidates = []
-
     sendWS({ event: 'offer' })
-    console.log('[Peer] ready')
   }
 
   const hangup = async () => {
@@ -147,15 +145,19 @@ export default function useSignaling(url: string) {
     const stop = !wsRef.current && !pcRef.current
     const unstable = !wsRef.current && pcRef.current
     let state: ConnectionState = 'stop'
+    let color = '#ff5b5bff'
     if (ready) {
       state = 'ready'
+      color = '#2c53ffff'
     } else if (pending) {
       state = 'pending'
+      color = '#7dcf80ff'
     } else if (unstable) {
       state = 'unstable'
+      color = 'yellow'
     }
     setConnectionState(state)
-    console.log(state)
+    logger.info('WS PC', `connectionState: %c${state}`, `color: ${color}`)
   }, [wsRef.current, pcRef.current])
 
   return {

@@ -2,6 +2,7 @@ import { auth } from '@/lib/server/auth/firebase-admin'
 import { cookies, headers } from 'next/headers'
 import { UserProvider } from './user-provider'
 import { redirect } from 'next/navigation'
+import { logger } from '@/lib/logger'
 
 export default async function AuthLayout({
   children
@@ -20,7 +21,7 @@ export default async function AuthLayout({
     const user = await auth.decodeSessionCookie(session, true)
     return <UserProvider user={user}>{children}</UserProvider>
   } catch (error) {
-    console.warn(error)
+    logger.debug('next', next)
     return redirect(`/login?next=${encodeURIComponent(next)}`)
   }
 }

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger'
+
 export type ApiErrorBody = {
   statusCode: number
   errorCode?: string
@@ -60,7 +62,7 @@ export class BaseClient {
   }
 
   private async apiFetch(url: string, options: RequestInit) {
-    console.log(`${this.baseUrl}${url}`)
+    logger.debug(`${this.baseUrl}${url}`)
     return await this.fetchFunc(`${this.baseUrl}${url}`, options)
   }
 

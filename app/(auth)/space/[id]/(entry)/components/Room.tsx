@@ -4,16 +4,21 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSignaling } from '../signaling-provider'
 import Button from '@/components/atoms/Button'
+import { logger } from '@/lib/logger'
 
 export default function Room({
   setSpaceState
 }: {
   setSpaceState: (state: 'exit') => void
 }) {
-  const { localStreamRef, hangup, remoteVideos } = useSignaling()
+  const { localStreamRef, hangup, remoteVideos, customMessageHandlers } =
+    useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [showLocal, setShowLocal] = useState(true)
-
+  customMessageHandlers.current['track-participant'] = (data) => {
+    const trackParticipants = JSON.parse(data)
+    logger.log('WS EVENT', 'track-participant: ', trackParticipants)
+  }
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localVideoRef.current) {
