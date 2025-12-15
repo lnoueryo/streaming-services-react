@@ -1,5 +1,7 @@
 import { BaseClient } from '@/lib/api/base-client/base-client'
 
+type SpacePrivacy = 'public'  | 'protected' | 'private'
+
 export type RoomResponse = Pick<SpaceResponse, 'id' | 'privacy'> & {
   participants: {
     id: string
@@ -12,7 +14,7 @@ export type RoomResponse = Pick<SpaceResponse, 'id' | 'privacy'> & {
 
 export type SpaceResponse = {
   id: string
-  privacy: string
+  privacy: SpacePrivacy
 }
 
 export type SpacesResponse = {
@@ -22,6 +24,13 @@ export type SpacesResponse = {
   total: number
   totalPages: number
 }
+
+export type CreateSpacePayload = {
+  name?: string
+  privacy: SpacePrivacy
+  members?: { email: string; role: "member" | "protected" | "admin" }[]
+}
+
 
 export class SpaceRepository {
   constructor(private client: BaseClient) {}
@@ -46,8 +55,8 @@ export class SpaceRepository {
     return res && (await res.json())
   }
 
-  public async createSpace(): Promise<SpaceResponse> {
-    const res = await this.client.post(`/spaces/create`, {})
+  public async createSpace(params: CreateSpacePayload): Promise<SpaceResponse> {
+    const res = await this.client.post(`/spaces`, params)
     return res && (await res.json())
   }
 }
