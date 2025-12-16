@@ -9,7 +9,7 @@ export type RoomResponse = Pick<SpaceResponse, 'id' | 'privacy'> & {
     email: string
     image: string
   }[]
-  isJoined: boolean
+  isParticipated: boolean
 }
 
 export type SpaceResponse = {

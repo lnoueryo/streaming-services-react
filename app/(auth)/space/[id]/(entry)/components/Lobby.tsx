@@ -20,7 +20,7 @@ export default function Lobby({
   const { localStreamRef, connectPeer } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
-    room.isJoined
+    room.isParticipated
   )
   const [isRightAfterEntry, setIsRightAfterEntry] = useState(true)
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function Lobby({
     try {
       const roomRes = await spaceRepositoryClient.enableEntry(room.id, params)
       setRoom(roomRes)
-      if (roomRes.isJoined) {
+      if (roomRes.isParticipated) {
         return setIsOpenRejoinConfirmation(true)
       }
       setIsOpenRejoinConfirmation(false)
