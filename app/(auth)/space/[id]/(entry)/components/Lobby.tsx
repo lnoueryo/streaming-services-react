@@ -1,5 +1,5 @@
 'use client'
-import { useRoom } from '@/app/(auth)/space/[id]/(entry)/room-provider'
+import { useSpace } from '@/app/(auth)/space/[id]/(entry)/space-provider'
 import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useEffect, useRef, useState } from 'react'
@@ -14,13 +14,13 @@ export default function Lobby({
 }: {
   setSpaceState: (state: 'room') => void
 }) {
-  const { room, setRoom } = useRoom()
+  const { space, setSpace } = useSpace()
   const user = useUser()
   const router = useRouter()
   const { localStreamRef, connectPeer } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
-    room.isParticipated
+    space.isParticipated
   )
   const [isRightAfterEntry, setIsRightAfterEntry] = useState(true)
   useEffect(() => {
@@ -33,9 +33,9 @@ export default function Lobby({
   }, [localVideoRef.current])
   const enableEntry = async (params?: { force: boolean }) => {
     try {
-      const roomRes = await spaceRepositoryClient.enableEntry(room.id, params)
-      setRoom(roomRes)
-      if (roomRes.isParticipated) {
+      const spaceRes = await spaceRepositoryClient.enableEntry(space.id, params)
+      setSpace(spaceRes)
+      if (spaceRes.isParticipated) {
         return setIsOpenRejoinConfirmation(true)
       }
       setIsOpenRejoinConfirmation(false)
@@ -87,7 +87,7 @@ export default function Lobby({
         <div className="relative bg-gray-900 rounded-2xl shadow-xl w-full max-w-md p-6 text-white">
           <h2 className="text-2xl font-bold text-center mb-4">現在の参加者</h2>
           <ul className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-            {room.participants
+            {space.participants
               .filter((p) => p.id !== user.id)
               .map((participant) => (
                 <li

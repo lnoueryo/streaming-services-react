@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { TurnCredential } from '@/repositories/signaling.repository'
 import { signalingRepositoryClient } from '@/lib/repositories/client/signaling.repository.client'
-import { useRoom } from '../room-provider'
+import { useSpace } from '../space-provider'
 import Lobby from './Lobby'
 import { useSignaling } from '../signaling-provider'
 import Room from './Room'
@@ -11,7 +11,7 @@ import Exit from './Exit'
 import { logger } from '@/lib/logger'
 
 export default function SpacePage() {
-  const { room, setRoom } = useRoom()
+  const { space, setSpace } = useSpace()
   const { customMessageHandlers, localStreamRef, connectWS, hangup } =
     useSignaling()
   const credentialRef = useRef<TurnCredential | null>(null)
@@ -33,8 +33,8 @@ export default function SpacePage() {
   customMessageHandlers.current['access'] = (data) => {
     const participants = JSON.parse(data)
     logger.log('WS EVENT', 'access: ', participants)
-    setRoom({
-      ...room,
+    setSpace({
+      ...space,
       participants
     })
   }
