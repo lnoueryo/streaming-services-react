@@ -107,11 +107,20 @@ export default function Home() {
 
           {/* プライバシー */}
           <div>
-            <label className="block text-sm font-medium">プライバシー</label>
+            <label className="block text-sm font-medium text-white">
+              プライバシー
+            </label>
+
             <select
               value={privacy}
               onChange={(e) => setPrivacy(e.target.value as any)}
-              className="mt-1 block w-full border rounded px-2 py-1"
+              className="
+                mt-1 block w-full rounded border
+                bg-gray-800 text-white
+                border-gray-600
+                px-2 py-1
+                focus:outline-none focus:ring
+              "
             >
               <option value="public">公開</option>
               <option value="protected">一部非公開 (招待URLを知っている人のみ)</option>
