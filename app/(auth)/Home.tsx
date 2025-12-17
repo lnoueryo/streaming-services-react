@@ -89,7 +89,7 @@ export default function Home() {
         </div>
       </div>
 
-      <Modal open={isOpenCreateRoomForm} onClose={() => setIsOpenCreateRoomForm(false)}>
+      <Modal open={isOpenCreateRoomForm} onClose={() => setIsOpenCreateRoomForm(false)} persistent>
         <div className="space-y-4 p-4 w-full max-w-md">
           <h2 className="text-xl font-semibold">スペースを作成</h2>
 
