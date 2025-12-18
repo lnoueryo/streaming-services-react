@@ -5,10 +5,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 export default function Modal({
   open,
   onClose,
+  persistent,
   children
 }: {
   open: boolean
   onClose: () => void
+  persistent?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -19,7 +21,7 @@ export default function Modal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={persistent ? undefined : onClose}
         >
           <motion.div
             className="bg-gray-800 text-white rounded-lg p-6 shadow-xl max-w-md w-full"
