@@ -1,28 +1,42 @@
 'use client'
-import { useRoom } from '@/app/(auth)/space/[id]/(entry)/room-provider'
+import { useSpace } from '@/app/(auth)/space/[id]/(entry)/space-provider'
 import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/atoms/Modal'
 import { useSignaling } from '../signaling-provider'
-import { useRouter } from 'next/navigation'
 import { useUser } from '@/app/(auth)/user-provider'
 import Button from '@/components/atoms/Button'
+import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
+import { logger } from '@/lib/logger'
 
 export default function Lobby({
   setSpaceState
 }: {
   setSpaceState: (state: 'room') => void
 }) {
-  const { room, setRoom } = useRoom()
+  const { space, setSpace } = useSpace()
   const user = useUser()
-  const router = useRouter()
-  const { localStreamRef, connectPeer } = useSignaling()
+  const { localStreamRef, customMessageHandlers, connectPeer } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
-    room.isParticipated
+    space.isParticipated
   )
   const [isRightAfterEntry, setIsRightAfterEntry] = useState(true)
+  customMessageHandlers.current['request-decision'] = (data: string) => {
+    const participant = JSON.parse(data)
+    logger.log('WS EVENT', 'request-decision: ', participant)
+    if (participant.status === 'rejected') {
+      return (location.href = '/')
+    }
+    setSpace({
+      ...space,
+      membership: {
+        ...space.membership,
+        status: participant.status
+      }
+    })
+  }
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localVideoRef.current) {
@@ -33,18 +47,23 @@ export default function Lobby({
   }, [localVideoRef.current])
   const enableEntry = async (params?: { force: boolean }) => {
     try {
-      const roomRes = await spaceRepositoryClient.enableEntry(room.id, params)
-      setRoom(roomRes)
-      if (roomRes.isParticipated) {
+      const spaceRes = await spaceRepositoryClient.enableEntry(space.id, params)
+      setSpace(spaceRes)
+      if (spaceRes.isParticipated) {
         return setIsOpenRejoinConfirmation(true)
       }
       setIsOpenRejoinConfirmation(false)
       return true
     } catch (error) {
       if (error instanceof ApiFetchError) {
+        if (error.statusCode === 403) {
+          alert(error.message)
+          location.href = '/'
+          return
+        }
         if (error.statusCode === 404) {
           alert('ルームが見つかりませんでした')
-          router.push('/')
+          location.href = '/'
           return
         }
         return
@@ -66,10 +85,30 @@ export default function Lobby({
       if (error instanceof ApiFetchError) {
         if (error.statusCode === 404) {
           alert('ルームが見つかりませんでした')
-          router.push('/')
+          location.href = '/'
           return
         }
         return
+      }
+      alert('予期せぬエラーが発生しました')
+    }
+  }
+  const sendRequest = async () => {
+    try {
+      const membership = await spaceMemberRepositoryClient.requestEntry(
+        space.id
+      )
+      setSpace({
+        ...space,
+        membership
+      })
+    } catch (error) {
+      if (error instanceof ApiFetchError) {
+        if (error.statusCode === 403) {
+          alert(error.message)
+          location.href = '/'
+          return
+        }
       }
       alert('予期せぬエラーが発生しました')
     }
@@ -84,42 +123,74 @@ export default function Lobby({
           playsInline
           className="absolute inset-0 w-full h-full object-cover opacity-40 scale-x-[-1]"
         />
-        <div className="relative bg-gray-900 rounded-2xl shadow-xl w-full max-w-md p-6 text-white">
-          <h2 className="text-2xl font-bold text-center mb-4">現在の参加者</h2>
-          <ul className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-            {room.participants
-              .filter((p) => p.id !== user.id)
-              .map((participant) => (
-                <li
-                  key={participant.id}
-                  className="flex items-center gap-3 bg-gray-800 px-3 py-2 rounded-lg"
-                >
-                  <img
-                    src={participant.image}
-                    alt={participant.name}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500"
-                  />
-                  <span className="text-sm font-medium">
-                    {participant.name}
-                  </span>
-                </li>
-              ))}
-          </ul>
-          <div className="mt-6 flex justify-center">
+        <div className="relative bg-gray-900 rounded-2xl shadow-xl w-full max-w-md p-10 text-white">
+          {space.membership.status === 'approved' && (
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-center mb-4">
+                現在の参加者
+              </h2>
+              <ul className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+                {space.participants
+                  .filter((p) => p.id !== user.id)
+                  .map((participant) => (
+                    <li
+                      key={participant.id}
+                      className="flex items-center gap-3 bg-gray-800 px-3 py-2 rounded-lg"
+                    >
+                      <img
+                        src={participant.image}
+                        alt={participant.name}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500"
+                      />
+                      <span className="text-sm font-medium">
+                        {participant.name}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+          <div className="flex justify-center">
             <Button
-              onClick={async () => router.push('/')}
+              onClick={async () => (location.href = '/')}
               className="mr-4 bg-dark border hover:bg-neutral-secondary-medium text-white font-semibold px-4 py-2 rounded-lg transition-all"
               loading
             >
               ホームに戻る
             </Button>
-            <Button
-              onClick={async () => await enterRoom()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-all"
-              loading
-            >
-              参加する
-            </Button>
+            {space.membership.status == 'none' ? (
+              <Button
+                onClick={async () => await sendRequest()}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-all"
+                loading
+              >
+                参加リクエスト
+              </Button>
+            ) : space.membership.status == 'pending' ? (
+              <Button
+                disabled
+                className="
+                  bg-neutral-700
+                  text-neutral-400
+                  border border-neutral-600
+                  font-semibold
+                  px-4 py-2
+                  rounded-lg
+                  cursor-not-allowed
+                  opacity-70
+                "
+              >
+                リクエスト済み
+              </Button>
+            ) : (
+              <Button
+                onClick={async () => await enterRoom()}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-all"
+                loading
+              >
+                参加する
+              </Button>
+            )}
           </div>
         </div>
       </div>

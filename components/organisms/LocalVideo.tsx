@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import Button from '../atoms/Button'
 
-export default function LocalVideo({ stream }: { stream: React.RefObject<MediaStream | null> }) {
+export default function LocalVideo({
+  stream
+}: {
+  stream: React.RefObject<MediaStream | null>
+}) {
   const [showLocal, setShowLocal] = useState(true)
   const localVideoRef = useRef<HTMLVideoElement>(null)
   useEffect(() => {
@@ -16,7 +20,7 @@ export default function LocalVideo({ stream }: { stream: React.RefObject<MediaSt
   }, [localVideoRef.current])
   return (
     <>
-    {showLocal}
+      {showLocal}
       {showLocal && (
         <div
           className="

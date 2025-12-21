@@ -5,13 +5,15 @@ export default function Button({
   children,
   className = '',
   loading = false,
-  type = 'button'
+  type = 'button',
+  disabled = false
 }: {
   onClick?: () => void
   children: React.ReactNode
   className?: string
   loading?: boolean
   type?: 'button' | 'submit' | 'reset'
+  disabled?: boolean
 }) {
   const [isLoading, setIsLoading] = useState(false)
 
@@ -35,7 +37,7 @@ export default function Button({
         ${className}
         disabled:opacity-60 disabled:cursor-not-allowed
       `}
-      disabled={isLoading}
+      disabled={isLoading || disabled}
     >
       {isLoading ? (
         <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>

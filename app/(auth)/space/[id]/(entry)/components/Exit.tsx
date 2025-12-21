@@ -2,7 +2,7 @@
 
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useRouter } from 'next/navigation'
-import { useRoom } from '../room-provider'
+import { useSpace } from '../space-provider'
 import Button from '@/components/atoms/Button'
 
 export default function Exit({
@@ -11,14 +11,14 @@ export default function Exit({
   setSpaceState: (state: 'reception') => void
 }) {
   const router = useRouter()
-  const { room, setRoom } = useRoom()
+  const { space, setSpace } = useSpace()
   const goHome = async () => {
     router.push('/')
   }
 
   const goBackToLobby = async () => {
-    const newLobby = await spaceRepositoryClient.enterLobby(room.id)
-    setRoom(newLobby)
+    const newLobby = await spaceRepositoryClient.enterLobby(space.id)
+    setSpace(newLobby)
     setSpaceState('reception')
   }
 
