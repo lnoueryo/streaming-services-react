@@ -23,7 +23,7 @@ export class BaseClient {
     private fetchFunc: (
       baseUrl: string,
       options: RequestInit
-    ) => Promise<Response>
+    ) => Promise<Response | void>
   ) {}
   get(
     url: string,
