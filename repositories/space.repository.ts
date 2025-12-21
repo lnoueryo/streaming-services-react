@@ -15,6 +15,7 @@ export type Room = {
 
 export type Space = {
   id: string
+  name?: string
   privacy: SpacePrivacy
   membership: {
     role: SpaceMember['role']
@@ -46,6 +47,11 @@ export type CreateSpacePayload = {
   members?: { email: string; role: 'member' | 'protected' | 'admin' }[]
 }
 
+export type InvitationResponse = {
+  space: Omit<Space, 'membership'>
+  redirect: string
+}
+
 export class SpaceRepository {
   constructor(private client: BaseClient) {}
   public async fetchPublicSpaces(params: {
@@ -69,8 +75,13 @@ export class SpaceRepository {
     return res && (await res.json())
   }
 
-  public async createSpace(params: CreateSpacePayload): Promise<Space> {
+  public async createSpace(params: CreateSpacePayload): Promise<Space & { url: string }> {
     const res = await this.client.post(`/spaces`, params)
+    return res && (await res.json())
+  }
+
+  public async acceptInvitation(token: string): Promise<InvitationResponse> {
+    const res = await this.client.get(`/spaces/invite/${token}`)
     return res && (await res.json())
   }
 }
