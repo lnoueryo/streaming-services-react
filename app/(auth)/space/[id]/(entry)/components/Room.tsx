@@ -48,6 +48,11 @@ export default function Room({
     setParticipantTrack(trackParticipants)
     logger.log('WS EVENT', 'track-participant: ', participantTrack)
   }
+  customMessageHandlers.current['duplicate-participant'] = () => {
+    alert('別の端末から同じアカウントで入室があったため、退室します。')
+    setSpaceState('exit')
+    logger.log('WS EVENT', 'duplicate-participant: ', participantTrack)
+  }
   if (space.membership.role === 'owner') {
     customMessageHandlers.current['participant-request'] = (data: string) => {
       const participant = JSON.parse(data)

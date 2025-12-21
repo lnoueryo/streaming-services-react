@@ -95,13 +95,10 @@ export default function Lobby({
   }
   const sendRequest = async () => {
     try {
-      await spaceMemberRepositoryClient.requestEntry(space.id)
+      const membership = await spaceMemberRepositoryClient.requestEntry(space.id)
       setSpace({
         ...space,
-        membership: {
-          ...space.membership,
-          status: 'pending'
-        }
+        membership,
       })
     } catch (error) {
       if (error instanceof ApiFetchError) {

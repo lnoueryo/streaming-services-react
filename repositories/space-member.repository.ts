@@ -15,9 +15,12 @@ export type SpaceMember = {
 export class SpaceMemberRepository {
   constructor(private client: BaseClient) {}
 
-  public async requestEntry(spaceId: string): Promise<void> {
-    await this.client.patch(`/space-members/${spaceId}/request`)
-    return
+  public async requestEntry(spaceId: string): Promise<{
+    role: SpaceMemberRole
+    status: SpaceMemberStatus
+  }> {
+    const res = await this.client.patch(`/space-members/${spaceId}/request`)
+    return res && (await res.json())
   }
 
   public async decideRequest(
