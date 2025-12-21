@@ -60,7 +60,6 @@ export default function Home() {
       setIsOpenCreateRoomForm(false)
       setSpaceCreated(space)
       setCreatedModal(true)
-      // router.push(`/space/${space.id}`);
     } finally {
       endLoading()
     }
