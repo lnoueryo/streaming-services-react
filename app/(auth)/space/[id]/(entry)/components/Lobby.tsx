@@ -5,7 +5,6 @@ import { spaceRepositoryClient } from '@/lib/repositories/client/space.repositor
 import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/atoms/Modal'
 import { useSignaling } from '../signaling-provider'
-import { useRouter } from 'next/navigation'
 import { useUser } from '@/app/(auth)/user-provider'
 import Button from '@/components/atoms/Button'
 import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
@@ -16,10 +15,8 @@ export default function Lobby({
 }: {
   setSpaceState: (state: 'room') => void
 }) {
-  // TODO: 戻るボタンを押すと普通に入れてしまうので、検知して403表示またはホームに飛ばす
   const { space, setSpace } = useSpace()
   const user = useUser()
-  const router = useRouter()
   const { localStreamRef, customMessageHandlers, connectPeer } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
@@ -30,7 +27,7 @@ export default function Lobby({
     const participant = JSON.parse(data)
     logger.log('WS EVENT', 'request-decision: ', participant)
     if (participant.status === 'rejected') {
-      return router.push('/')
+      return location.href = '/'
     }
     setSpace({
       ...space,
@@ -61,12 +58,12 @@ export default function Lobby({
       if (error instanceof ApiFetchError) {
         if (error.statusCode === 403) {
           alert(error.message)
-          router.push('/')
+          location.href = '/'
           return
         }
         if (error.statusCode === 404) {
           alert('ルームが見つかりませんでした')
-          router.push('/')
+          location.href = '/'
           return
         }
         return
@@ -88,7 +85,7 @@ export default function Lobby({
       if (error instanceof ApiFetchError) {
         if (error.statusCode === 404) {
           alert('ルームが見つかりませんでした')
-          router.push('/')
+          location.href = '/'
           return
         }
         return
@@ -110,7 +107,7 @@ export default function Lobby({
       if (error instanceof ApiFetchError) {
         if (error.statusCode === 403) {
           alert(error.message)
-          router.push('/')
+          location.href = '/'
           return
         }
       }
@@ -155,7 +152,7 @@ export default function Lobby({
           }
           <div className="flex justify-center">
             <Button
-              onClick={async () => router.push('/')}
+              onClick={async () => location.href = '/'}
               className="mr-4 bg-dark border hover:bg-neutral-secondary-medium text-white font-semibold px-4 py-2 rounded-lg transition-all"
               loading
             >
