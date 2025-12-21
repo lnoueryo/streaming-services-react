@@ -1,6 +1,6 @@
 'use client'
-
-import { useEffect, useRef, useState } from 'react'
+// TODO: リファクタリングする
+import { JSX, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSignaling } from '../signaling-provider'
 import Button from '@/components/atoms/Button'
@@ -12,7 +12,31 @@ import LocalVideo from '@/components/organisms/LocalVideo'
 import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
 import { useSpace } from '../space-provider'
 import Modal from '@/components/atoms/Modal'
-import { useRouter } from 'next/navigation'
+import { SpaceMember } from '@/repositories/space-member.repository'
+import {
+  UserIcon,
+  ShieldCheckIcon,
+  CrownIcon,
+} from 'lucide-react'
+import { useUser } from '@/app/(auth)/user-provider'
+
+const roleIconMap: Record<SpaceMember['role'], JSX.Element> = {
+  member: <UserIcon className="w-4 h-4 text-gray-400" />,
+  admin: <ShieldCheckIcon className="w-4 h-4 text-blue-400" />,
+  owner: <CrownIcon className="w-4 h-4 text-yellow-400" />,
+}
+
+const statusStyleMap: Record<SpaceMember['status'], string> = {
+  none: 'border-l-4 border-gray-400 bg-gray-800',
+  pending: 'border-l-4 border-yellow-400 bg-gray-800',
+  approved: 'border-l-4 border-green-400 bg-gray-800',
+  rejected: 'border-l-4 border-red-400 bg-gray-800',
+}
+
+const canApprove = (status: SpaceMember['status']) => status === 'pending'
+const canReject = (status: SpaceMember['status']) =>
+  status === 'none' || status === 'pending' || status === 'approved'
+const canCancel = (status: SpaceMember['status']) => status === 'rejected'
 
 type TrackParticipant = {
   [streamId: string]: {
@@ -30,23 +54,19 @@ export default function Room({
 }: {
   setSpaceState: (state: 'exit') => void
 }) {
-  const router = useRouter()
   const { localStreamRef, hangup, remoteStreams, customMessageHandlers } =
     useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const { space, setSpace } = useSpace()
+  const user = useUser()
   const [participantTrack, setParticipantTrack] = useState<TrackParticipant>({})
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideoType[]>([])
-  const [entryRequests, setEntryRequests] = useState<
-    {
-      id: number
-      name: string
-      email: string
-      image: string
-      userId: string
-      role: string
-    }[]
-  >([])
+  const [entryRequests, setEntryRequests] = useState<SpaceMember[]>([])
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [requestList, setRequestList] = useState<SpaceMember[]>([])
+  const pendingCount = requestList.filter(
+    (r: any) => r.status === 'pending'
+  ).length
   customMessageHandlers.current['track-participant'] = (data: string) => {
     const trackParticipants: TrackParticipant = JSON.parse(data)
     setParticipantTrack(trackParticipants)
@@ -92,7 +112,7 @@ export default function Room({
 
   const decideRequest = async (
     spaceMemberId: number,
-    status: 'approved' | 'rejected'
+    status: 'none' | 'approved' | 'rejected'
   ) => {
     try {
       const spaceMember = await spaceMemberRepositoryClient.decideRequest(
@@ -102,8 +122,28 @@ export default function Room({
           status
         }
       )
-      // TODO: 参加メンバーの情報管理して一覧で表示、ステータス変更できるようにする
-      console.log('decideRequest result:', spaceMember)
+      setRequestList((prev) => {
+        return prev.map((r) => {
+          if (r.id === spaceMember.id) {
+            return {
+              ...r,
+              status: spaceMember.status
+            }
+          }
+          return r
+        })
+      })
+    } catch (error) {
+      alert('予期せぬエラーが発生しました')
+    }
+  }
+
+  const fetchSpaceMembers = async () => {
+    try {
+      const { spaceMembers } =
+        await spaceMemberRepositoryClient.fetchSpaceMembers(space.id)
+        console.log('fetchSpaceMembers result:', spaceMembers)
+      setRequestList(spaceMembers)
     } catch (error) {
       alert('予期せぬエラーが発生しました')
     }
@@ -163,8 +203,119 @@ export default function Room({
           >
             切る
           </Button>
+          {
+            space.membership.role === 'owner' &&
+            <Button
+              onClick={async () => {
+                await fetchSpaceMembers()
+                setRequestModalOpen(true)
+              }}
+              className="relative bg-gray-500/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs"
+            >
+              リクエスト
+
+              {pendingCount > 0 && (
+                <span className="
+                  absolute -top-1 -right-1
+                  min-w-[18px] h-[18px]
+                  px-1
+                  flex items-center justify-center
+                  rounded-full
+                  bg-red-500 text-white
+                  text-[10px] font-bold
+                ">
+                  {pendingCount}
+                </span>
+              )}
+            </Button>
+          }
         </motion.div>
       </div>
+      <Modal
+        open={requestModalOpen}
+        onClose={async () => {
+          setRequestModalOpen(false)
+        }}
+        size="xl"
+      >
+        <div>
+          <h2 className="text-lg font-semibold mb-2">リクエスト一覧</h2>
+
+          {requestList.map((request: SpaceMember) => (
+            <div
+              key={request.id}
+              className={`
+                flex items-center justify-between mb-2 p-3 rounded
+                ${statusStyleMap[request.status]}
+              `}
+            >
+              {/* 左側 */}
+              <div className="flex items-center gap-3">
+                <img
+                  className="w-8 h-8 rounded-full"
+                />
+
+                <div className="text-sm">
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium"></span>
+                    {roleIconMap[request.role]}
+                  </div>
+
+                  <div className="text-gray-400 text-xs">
+                    {request.email}
+                  </div>
+
+                  <div className="text-gray-500 text-xs">
+                    {request.userId ? '' : 'まだ招待を承諾していません' }
+                  </div>
+                </div>
+              </div>
+
+              {/* 右側ボタン */}
+              <div className="flex gap-2">
+                {canReject(request.status) && (
+                  <Button
+                    className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded"
+                    onClick={() => decideRequest(request.id, 'rejected')}
+                    disabled={request.userId === user.id}
+                  >
+                    拒否
+                  </Button>
+                )}
+
+                {canApprove(request.status) && (
+                  <Button
+                    className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded"
+                    onClick={() => decideRequest(request.id, 'approved')}
+                    disabled={request.userId === user.id}
+                  >
+                    承認
+                  </Button>
+                )}
+
+                {canCancel(request.status) && (
+                  <Button
+                    className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded"
+                    onClick={() => decideRequest(request.id, 'none')}
+                    disabled={request.userId === user.id}
+                  >
+                    取り消し
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <div className="flex justify-end mt-4">
+            <Button
+              className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
+              onClick={() => setRequestModalOpen(false)}
+            >
+              閉じる
+            </Button>
+          </div>
+        </div>
+      </Modal>
       {entryRequests.map((request) => {
         return (
           <Modal
@@ -174,6 +325,8 @@ export default function Room({
                 prev.filter((r) => r.userId !== request.userId)
               )
             }}
+            persistent
+            z-index="max"
           >
             <div>
               <h2 className="text-lg font-semibold mb-2">入室のリクエスト</h2>
@@ -184,7 +337,8 @@ export default function Room({
               <div className="flex justify-end gap-2">
                 <Button
                   className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded transition"
-                  onClick={() => {
+                  onClick={async () => {
+                    await fetchSpaceMembers()
                     setEntryRequests((prev) =>
                       prev.filter((r) => r.userId !== request.userId)
                     )
