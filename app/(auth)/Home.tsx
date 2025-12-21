@@ -7,6 +7,8 @@ import { useUser } from './user-provider'
 import Modal from '@/components/atoms/Modal'
 import Button from '@/components/atoms/Button'
 import { useLoading } from '../LoadingContext'
+import Link from 'next/link'
+import output from '@/config'
 
 export default function Home() {
   const { startLoading, endLoading } = useLoading()
@@ -14,8 +16,12 @@ export default function Home() {
   const router = useRouter()
   // TODO open,closeでフォームをリセット
   const [isOpenCreateRoomForm, setIsOpenCreateRoomForm] = useState(false)
+  const [spaceCreated, setSpaceCreated] = useState<{
+    id: string
+    url: string
+  } | null>(null)
+  const [createdModal, setCreatedModal] = useState(false)
 
-  // === form state ===
   const [name, setName] = useState('')
   const [privacy, setPrivacy] = useState<'public' | 'protected' | 'private'>(
     'public'
@@ -52,7 +58,8 @@ export default function Home() {
     try {
       const space = await spaceRepositoryClient.createSpace(payload)
       setIsOpenCreateRoomForm(false)
-      // router.push(`/space/${space.id}`);
+      setSpaceCreated(space)
+      setCreatedModal(true)
     } finally {
       endLoading()
     }
@@ -63,6 +70,17 @@ export default function Home() {
     await authRepositoryClient.logout()
     router.replace('/login')
     endLoading()
+  }
+
+
+  const handleCopy = async () => {
+    if (!spaceCreated) {
+      return
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(spaceCreated.url)
+      alert('URL をコピーしました')
+    }
   }
 
   return (
@@ -195,6 +213,38 @@ export default function Home() {
             >
               作成
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={createdModal && !!spaceCreated} onClose={() => setCreatedModal(false)} persistent>
+        <div className="space-y-4 p-4 w-full max-w-md rounded shadow-lg">
+          <h2 className="text-xl font-semibold">スペースが作成されました</h2>
+
+          <p className="text-sm">
+            下記のURLを共有してください。招待されたメンバーはこのURLから
+            スペースに参加できます。
+          </p>
+
+          <div className="mt-2 py-2 text-sm text-blue-700 rounded break-all">
+            <Link href={`${spaceCreated?.url}`}>
+              {output.streamingApiFrontendOrigin}/{spaceCreated?.url}
+            </Link>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => setCreatedModal(false)}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+            >
+              閉じる
+            </button>
+            <button
+              onClick={handleCopy}
+              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            >
+              URL をコピー
+            </button>
           </div>
         </div>
       </Modal>
