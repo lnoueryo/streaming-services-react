@@ -78,7 +78,7 @@ export default function Home() {
       return
     }
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(spaceCreated.url)
+      await navigator.clipboard.writeText(output.streamingApiFrontendOrigin + spaceCreated.url)
       alert('URL をコピーしました')
     }
   }
@@ -228,7 +228,7 @@ export default function Home() {
 
           <div className="mt-2 py-2 text-sm text-blue-700 rounded break-all">
             <Link href={`${spaceCreated?.url}`}>
-              {output.streamingApiFrontendOrigin}/{spaceCreated?.url}
+              {output.streamingApiFrontendOrigin}{spaceCreated?.url}
             </Link>
           </div>
 
