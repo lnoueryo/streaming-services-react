@@ -10,6 +10,7 @@ export type SpaceMember = {
   email: string
   role: SpaceMemberRole
   status: SpaceMemberStatus
+  joinedAt: SpaceMemberStatus
 }
 
 export class SpaceMemberRepository {
@@ -26,7 +27,7 @@ export class SpaceMemberRepository {
   public async decideRequest(
     spaceId: string,
     spaceMemberId: number,
-    payload: { status: 'approved' | 'rejected' }
+    payload: { status: 'none' | 'approved' | 'rejected' }
   ): Promise<{
     id: number
     role: SpaceMemberStatus
@@ -36,6 +37,15 @@ export class SpaceMemberRepository {
       `/space-members/${spaceId}/request/${spaceMemberId}/decide`,
       payload
     )
+    return res && (await res.json())
+  }
+
+  public async fetchSpaceMembers(
+    spaceId: string,
+  ): Promise<{
+    spaceMembers: SpaceMember[]
+  }> {
+    const res = await this.client.get(`/space-members/${spaceId}`)
     return res && (await res.json())
   }
 }
