@@ -6,7 +6,7 @@ export default function Button({
   className = '',
   loading = false,
   type = 'button',
-  disabled = false,
+  disabled = false
 }: {
   onClick?: () => void
   children: React.ReactNode

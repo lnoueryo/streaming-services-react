@@ -25,7 +25,11 @@ export class BaseClient {
       options: RequestInit
     ) => Promise<Response>
   ) {}
-  get(url: string, params?: Record<string, any>, headers?: Record<string, string>) {
+  get(
+    url: string,
+    params?: Record<string, any>,
+    headers?: Record<string, string>
+  ) {
     return this.apiFetch(`${url}${this.buildQuery(params)}`, {
       method: 'GET',
       headers: { ...(headers || {}) }

@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSignaling } from '../signaling-provider'
 import Button from '@/components/atoms/Button'
 import { logger } from '@/lib/logger'
-import RemoteVideo, { RemoteVideoType } from '@/components/organisms/RemoteVideo'
+import RemoteVideo, {
+  RemoteVideoType
+} from '@/components/organisms/RemoteVideo'
 import LocalVideo from '@/components/organisms/LocalVideo'
 import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
 import { useSpace } from '../space-provider'
@@ -35,14 +37,16 @@ export default function Room({
   const { space, setSpace } = useSpace()
   const [participantTrack, setParticipantTrack] = useState<TrackParticipant>({})
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideoType[]>([])
-  const [entryRequests, setEntryRequests] = useState<{
-    id: number
-    name: string
-    email: string
-    image: string
-    userId: string
-    role: string
-  }[]>([])
+  const [entryRequests, setEntryRequests] = useState<
+    {
+      id: number
+      name: string
+      email: string
+      image: string
+      userId: string
+      role: string
+    }[]
+  >([])
   customMessageHandlers.current['track-participant'] = (data: string) => {
     const trackParticipants: TrackParticipant = JSON.parse(data)
     setParticipantTrack(trackParticipants)
@@ -86,11 +90,18 @@ export default function Room({
     setRemoteVideos(newRemoteVideos)
   }, [remoteStreams, participantTrack])
 
-  const decideRequest = async (spaceMemberId: number, status: 'approved' | 'rejected') => {
+  const decideRequest = async (
+    spaceMemberId: number,
+    status: 'approved' | 'rejected'
+  ) => {
     try {
-      const spaceMember = await spaceMemberRepositoryClient.decideRequest(space.id, spaceMemberId, {
-        status
-      })
+      const spaceMember = await spaceMemberRepositoryClient.decideRequest(
+        space.id,
+        spaceMemberId,
+        {
+          status
+        }
+      )
       // TODO: 参加メンバーの情報管理して一覧で表示、ステータス変更できるようにする
       console.log('decideRequest result:', spaceMember)
     } catch (error) {
@@ -100,13 +111,15 @@ export default function Room({
 
   return (
     <>
-      <div className="
+      <div
+        className="
         relative w-full
         max-sm:h-[calc(var(--vh,100vh))]
         md:h-screen
         bg-black
         overflow-hidden
-      ">
+      "
+      >
         {/* Remote Grid */}
         <motion.div
           layout
@@ -152,56 +165,60 @@ export default function Room({
           </Button>
         </motion.div>
       </div>
-      {
-        entryRequests.map((request) => {
-          return (
-            <Modal
-              open={!!request}
-              onClose={() => {
-                setEntryRequests((prev) => prev.filter((r) => r.userId !== request.userId))
-              }}
-            >
-              <div>
-                <h2 className="text-lg font-semibold mb-2">入室のリクエスト</h2>
-                <p className="mb-4">
-                  {request.email}が入室をリクエストしています。
-                </p>
+      {entryRequests.map((request) => {
+        return (
+          <Modal
+            open={!!request}
+            onClose={() => {
+              setEntryRequests((prev) =>
+                prev.filter((r) => r.userId !== request.userId)
+              )
+            }}
+          >
+            <div>
+              <h2 className="text-lg font-semibold mb-2">入室のリクエスト</h2>
+              <p className="mb-4">
+                {request.email}が入室をリクエストしています。
+              </p>
 
-                <div className="flex justify-end gap-2">
-                  <Button
-                    className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded transition"
-                    onClick={() => {
-                      setEntryRequests((prev) => prev.filter((r) => r.userId !== request.userId))
-                    }}
-                  >
-                    キャンセル
-                  </Button>
-                  <Button
-                    className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition"
-                    onClick={async () => {
-                        decideRequest(request.id, 'rejected')
-                        setEntryRequests((prev) => prev.filter((r) => r.userId !== request.userId))
-                      }
-                    }
-                  >
-                    拒否
-                  </Button>
-                  <Button
-                    className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition"
-                    onClick={async () => {
-                        decideRequest(request.id, 'approved')
-                        setEntryRequests((prev) => prev.filter((r) => r.userId !== request.userId))
-                      }
-                    }
-                  >
-                    承認
-                  </Button>
-                </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded transition"
+                  onClick={() => {
+                    setEntryRequests((prev) =>
+                      prev.filter((r) => r.userId !== request.userId)
+                    )
+                  }}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition"
+                  onClick={async () => {
+                    decideRequest(request.id, 'rejected')
+                    setEntryRequests((prev) =>
+                      prev.filter((r) => r.userId !== request.userId)
+                    )
+                  }}
+                >
+                  拒否
+                </Button>
+                <Button
+                  className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition"
+                  onClick={async () => {
+                    decideRequest(request.id, 'approved')
+                    setEntryRequests((prev) =>
+                      prev.filter((r) => r.userId !== request.userId)
+                    )
+                  }}
+                >
+                  承認
+                </Button>
               </div>
-            </Modal>
-          )
-        })
-      }
+            </div>
+          </Modal>
+        )
+      })}
     </>
   )
 }

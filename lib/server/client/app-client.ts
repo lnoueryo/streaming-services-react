@@ -1,5 +1,5 @@
-import output from "@/config"
-import { ApiFetchError, BaseClient } from "@/lib/api/base-client/base-client"
+import output from '@/config'
+import { ApiFetchError, BaseClient } from '@/lib/api/base-client/base-client'
 
 export class AppClient extends BaseClient {
   constructor(baseUrl: string) {
@@ -11,7 +11,6 @@ export class AppClient extends BaseClient {
         }
       })
       if (res.status >= 400) {
-        console.log('res status ', res.status)
         const data = await res.json()
         throw new ApiFetchError(data)
       }
@@ -21,4 +20,4 @@ export class AppClient extends BaseClient {
   }
 }
 
-export const appClient = new AppClient(output.streamingBackendApiOrigin.server);
+export const appClient = new AppClient(output.streamingBackendApiOrigin.server)

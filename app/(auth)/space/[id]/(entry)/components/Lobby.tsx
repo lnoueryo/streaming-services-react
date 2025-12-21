@@ -27,7 +27,7 @@ export default function Lobby({
     const participant = JSON.parse(data)
     logger.log('WS EVENT', 'request-decision: ', participant)
     if (participant.status === 'rejected') {
-      return location.href = '/'
+      return (location.href = '/')
     }
     setSpace({
       ...space,
@@ -95,10 +95,12 @@ export default function Lobby({
   }
   const sendRequest = async () => {
     try {
-      const membership = await spaceMemberRepositoryClient.requestEntry(space.id)
+      const membership = await spaceMemberRepositoryClient.requestEntry(
+        space.id
+      )
       setSpace({
         ...space,
-        membership,
+        membership
       })
     } catch (error) {
       if (error instanceof ApiFetchError) {
@@ -122,10 +124,11 @@ export default function Lobby({
           className="absolute inset-0 w-full h-full object-cover opacity-40 scale-x-[-1]"
         />
         <div className="relative bg-gray-900 rounded-2xl shadow-xl w-full max-w-md p-10 text-white">
-          {
-            space.membership.status === 'approved' &&
+          {space.membership.status === 'approved' && (
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-center mb-4">現在の参加者</h2>
+              <h2 className="text-2xl font-bold text-center mb-4">
+                現在の参加者
+              </h2>
               <ul className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
                 {space.participants
                   .filter((p) => p.id !== user.id)
@@ -146,17 +149,16 @@ export default function Lobby({
                   ))}
               </ul>
             </div>
-          }
+          )}
           <div className="flex justify-center">
             <Button
-              onClick={async () => location.href = '/'}
+              onClick={async () => (location.href = '/')}
               className="mr-4 bg-dark border hover:bg-neutral-secondary-medium text-white font-semibold px-4 py-2 rounded-lg transition-all"
               loading
             >
               ホームに戻る
             </Button>
-            {
-              space.membership.status == 'none' ?
+            {space.membership.status == 'none' ? (
               <Button
                 onClick={async () => await sendRequest()}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-all"
@@ -164,7 +166,7 @@ export default function Lobby({
               >
                 参加リクエスト
               </Button>
-              : space.membership.status == 'pending' ?
+            ) : space.membership.status == 'pending' ? (
               <Button
                 disabled
                 className="
@@ -180,7 +182,7 @@ export default function Lobby({
               >
                 リクエスト済み
               </Button>
-              :
+            ) : (
               <Button
                 onClick={async () => await enterRoom()}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-all"
@@ -188,7 +190,7 @@ export default function Lobby({
               >
                 参加する
               </Button>
-            }
+            )}
           </div>
         </div>
       </div>

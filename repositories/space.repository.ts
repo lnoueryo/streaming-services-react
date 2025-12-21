@@ -1,7 +1,7 @@
 import { BaseClient } from '@/lib/api/base-client/base-client'
 import { SpaceMember } from './space-member.repository'
 
-type SpacePrivacy = 'public'  | 'protected' | 'private'
+type SpacePrivacy = 'public' | 'protected' | 'private'
 
 export type Room = {
   participants: {
@@ -32,7 +32,6 @@ export type SpaceResponse = Pick<Space, 'id' | 'privacy' | 'membership'> & {
   isParticipated: boolean
 }
 
-
 export type SpacesResponse = {
   items: Space[]
   page: number
@@ -44,9 +43,8 @@ export type SpacesResponse = {
 export type CreateSpacePayload = {
   name?: string
   privacy: SpacePrivacy
-  members?: { email: string; role: "member" | "protected" | "admin" }[]
+  members?: { email: string; role: 'member' | 'protected' | 'admin' }[]
 }
-
 
 export class SpaceRepository {
   constructor(private client: BaseClient) {}

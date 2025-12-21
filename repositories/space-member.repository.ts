@@ -1,4 +1,4 @@
-import { BaseClient } from "@/lib/api/base-client/base-client"
+import { BaseClient } from '@/lib/api/base-client/base-client'
 
 type SpaceMemberRole = 'owner' | 'admin' | 'member'
 type SpaceMemberStatus = 'none' | 'pending' | 'approved' | 'rejected'
@@ -32,8 +32,10 @@ export class SpaceMemberRepository {
     role: SpaceMemberStatus
     status: 'approved' | 'rejected'
   }> {
-    const res = await this.client.patch(`/space-members/${spaceId}/request/${spaceMemberId}/decide`, payload)
+    const res = await this.client.patch(
+      `/space-members/${spaceId}/request/${spaceMemberId}/decide`,
+      payload
+    )
     return res && (await res.json())
   }
-
 }
