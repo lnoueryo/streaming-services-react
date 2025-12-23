@@ -31,6 +31,7 @@ export type SpaceResponse = Pick<Space, 'id' | 'privacy' | 'membership'> & {
     image: string
   }[]
   isParticipated: boolean
+  invitationToken?: string
 }
 
 export type SpacesResponse = {
@@ -75,7 +76,9 @@ export class SpaceRepository {
     return res && (await res.json())
   }
 
-  public async createSpace(params: CreateSpacePayload): Promise<Space & { url: string }> {
+  public async createSpace(
+    params: CreateSpacePayload
+  ): Promise<Space & { url: string }> {
     const res = await this.client.post(`/spaces`, params)
     return res && (await res.json())
   }

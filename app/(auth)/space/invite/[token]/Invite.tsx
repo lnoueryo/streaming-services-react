@@ -1,8 +1,12 @@
 'use client'
 
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation'
 
-export default function Invite({ invitation }: { invitation: { space: { id: string; name?: string;  }, redirect: string } }) {
+export default function Invite({
+  invitation
+}: {
+  invitation: { space: { id: string; name?: string }; redirect: string }
+}) {
   const router = useRouter()
   router.push(invitation.redirect)
   return (
@@ -13,7 +17,10 @@ export default function Invite({ invitation }: { invitation: { space: { id: stri
             招待を受け付けました
           </h2>
           <div className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-            <div className="mb-4">{invitation.space.name}スペースの招待を受け付けました。スペースページへリダイレクトします。</div>
+            <div className="mb-4">
+              {invitation.space.name}
+              スペースの招待を受け付けました。スペースページへリダイレクトします。
+            </div>
           </div>
         </div>
       </div>

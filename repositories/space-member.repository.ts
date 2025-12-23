@@ -40,12 +40,20 @@ export class SpaceMemberRepository {
     return res && (await res.json())
   }
 
-  public async fetchSpaceMembers(
-    spaceId: string,
-  ): Promise<{
+  public async fetchSpaceMembers(spaceId: string): Promise<{
     spaceMembers: SpaceMember[]
   }> {
     const res = await this.client.get(`/space-members/${spaceId}`)
+    return res && (await res.json())
+  }
+
+  public async inviteMembers(
+    spaceId: string,
+    members: { members: { email: string; role: 'member' | 'admin' }[] }
+  ): Promise<{
+    spaceMembers: SpaceMember[]
+  }> {
+    const res = await this.client.post(`/space-members/${spaceId}`, members)
     return res && (await res.json())
   }
 }
