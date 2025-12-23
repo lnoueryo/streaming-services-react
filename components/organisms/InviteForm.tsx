@@ -2,16 +2,12 @@ type Invitee = { email: string; role: 'member' | 'admin' }
 
 export default function InviteForm({
   value,
-  onChange,
+  onChange
 }: {
   value: Invitee[]
   onChange: React.Dispatch<React.SetStateAction<Invitee[]>>
 }) {
-  const updateInvitee = (
-    idx: number,
-    key: 'email' | 'role',
-    v: string
-  ) => {
+  const updateInvitee = (idx: number, key: 'email' | 'role', v: string) => {
     onChange((prev) => {
       const arr = [...prev]
       arr[idx] = { ...arr[idx], [key]: v } as Invitee
@@ -38,17 +34,13 @@ export default function InviteForm({
           <input
             type="email"
             value={item.email}
-            onChange={(e) =>
-              updateInvitee(idx, 'email', e.target.value)
-            }
+            onChange={(e) => updateInvitee(idx, 'email', e.target.value)}
             className="flex-1 border rounded px-2 py-1"
           />
 
           <select
             value={item.role}
-            onChange={(e) =>
-              updateInvitee(idx, 'role', e.target.value)
-            }
+            onChange={(e) => updateInvitee(idx, 'role', e.target.value)}
             className="border rounded px-2 py-1"
           >
             <option value="member">Member</option>

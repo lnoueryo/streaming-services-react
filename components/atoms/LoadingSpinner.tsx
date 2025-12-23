@@ -7,7 +7,7 @@ type LoadingSpinnerProps = {
 export function LoadingSpinner({
   size = 24,
   color = 'border-gray-300 border-t-gray-600',
-  className = '',
+  className = ''
 }: LoadingSpinnerProps) {
   return (
     <div
@@ -21,7 +21,7 @@ export function LoadingSpinner({
       `}
       style={{
         width: size,
-        height: size,
+        height: size
       }}
     />
   )

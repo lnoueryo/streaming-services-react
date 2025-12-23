@@ -9,16 +9,15 @@ export default function EntryRequest({
   request,
   setEntryRequests,
   setRequestList,
-  decideRequest,
+  decideRequest
 }: {
-  request: SpaceMember,
-  setEntryRequests: React.Dispatch<
-    React.SetStateAction<SpaceMember[]>
-  >
-  setRequestList: React.Dispatch<
-    React.SetStateAction<SpaceMember[]>
-  >
-  decideRequest: (memberId: number, status: 'none' | 'approved' | 'rejected') => Promise<void>,
+  request: SpaceMember
+  setEntryRequests: React.Dispatch<React.SetStateAction<SpaceMember[]>>
+  setRequestList: React.Dispatch<React.SetStateAction<SpaceMember[]>>
+  decideRequest: (
+    memberId: number,
+    status: 'none' | 'approved' | 'rejected'
+  ) => Promise<void>
 }) {
   const user = useUser()
 
@@ -31,7 +30,7 @@ export default function EntryRequest({
         )
         setRequestList((prev) => {
           if (prev.some((r) => r.id !== request.id)) {
-            return [ ...prev, request]
+            return [...prev, request]
           }
           return prev.map((r) => {
             if (r.id === request.id) {

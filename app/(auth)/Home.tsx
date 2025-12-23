@@ -59,13 +59,14 @@ export default function Home() {
     endLoading()
   }
 
-
   const handleCopy = async () => {
     if (!spaceCreated) {
       return
     }
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(output.streamingApiFrontendOrigin + spaceCreated.url)
+      await navigator.clipboard.writeText(
+        output.streamingApiFrontendOrigin + spaceCreated.url
+      )
       alert('URL をコピーしました')
     }
   }
@@ -141,10 +142,7 @@ export default function Home() {
 
           {/* Private の場合のみ Emails + Role */}
           {privacy !== 'public' && (
-            <InviteForm
-              value={members}
-              onChange={setInvitees}
-            />
+            <InviteForm value={members} onChange={setInvitees} />
           )}
 
           {/* Submit ボタン */}
@@ -173,7 +171,8 @@ export default function Home() {
         body={
           <div className="mt-2 py-2 text-sm text-blue-700 rounded break-all">
             <Link href={`${spaceCreated?.url}`}>
-              {output.streamingApiFrontendOrigin}{spaceCreated?.url}
+              {output.streamingApiFrontendOrigin}
+              {spaceCreated?.url}
             </Link>
           </div>
         }

@@ -22,7 +22,7 @@ export function ConfirmModal({
   body,
   footer,
   persistent = false,
-  zIndex = 'max',
+  zIndex = 'max'
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -47,29 +47,13 @@ export function ConfirmModal({
           </button>
         )}
 
-        {title && (
-          <h2 className="text-lg font-semibold mb-4">
-            {title}
-          </h2>
-        )}
+        {title && <h2 className="text-lg font-semibold mb-4">{title}</h2>}
 
-        {message && (
-          <p className="mb-4 text-sm">
-            {message}
-          </p>
-        )}
+        {message && <p className="mb-4 text-sm">{message}</p>}
 
-        {body && (
-          <div className="mb-4">
-            {body}
-          </div>
-        )}
+        {body && <div className="mb-4">{body}</div>}
 
-        {footer && (
-          <div className="flex justify-end gap-2">
-            {footer}
-          </div>
-        )}
+        {footer && <div className="flex justify-end gap-2">{footer}</div>}
       </div>
     </Modal>
   )

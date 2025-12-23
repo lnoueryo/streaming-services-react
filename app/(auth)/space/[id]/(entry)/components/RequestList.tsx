@@ -6,11 +6,7 @@ import { ConfirmModal } from '@/components/molecules/ConfirmModal'
 import { JSX, useState } from 'react'
 import { SpaceMember } from '@/repositories/space-member.repository'
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner'
-import {
-  UserIcon,
-  ShieldCheckIcon,
-  CrownIcon,
-} from 'lucide-react'
+import { UserIcon, ShieldCheckIcon, CrownIcon } from 'lucide-react'
 import { useUser } from '@/app/(auth)/user-provider'
 import InviteForm from '@/components/organisms/InviteForm'
 
@@ -22,25 +18,30 @@ export default function RequestList({
   requestList,
   loading
 }: {
-  isOpen: boolean,
-  setIsOpen: (open: boolean) => void,
-  decideRequest: (memberId: number, status: 'none' | 'approved' | 'rejected') => Promise<void>,
-  inviteNewMembers: (members: { email: string; role: 'member' | 'admin' }[]) => Promise<SpaceMember[]>,
-  requestList: SpaceMember[],
+  isOpen: boolean
+  setIsOpen: (open: boolean) => void
+  decideRequest: (
+    memberId: number,
+    status: 'none' | 'approved' | 'rejected'
+  ) => Promise<void>
+  inviteNewMembers: (
+    members: { email: string; role: 'member' | 'admin' }[]
+  ) => Promise<SpaceMember[]>
+  requestList: SpaceMember[]
   loading: boolean
 }) {
   const user = useUser()
   const roleIconMap: Record<SpaceMember['role'], JSX.Element> = {
     member: <UserIcon className="w-4 h-4 text-gray-400" />,
     admin: <ShieldCheckIcon className="w-4 h-4 text-blue-400" />,
-    owner: <CrownIcon className="w-4 h-4 text-yellow-400" />,
+    owner: <CrownIcon className="w-4 h-4 text-yellow-400" />
   }
 
   const statusStyleMap: Record<SpaceMember['status'], string> = {
     none: 'border-l-4 border-gray-400 bg-gray-800',
     pending: 'border-l-4 border-yellow-400 bg-gray-800',
     approved: 'border-l-4 border-blue-400 bg-gray-800',
-    rejected: 'border-l-4 border-red-400 bg-gray-800',
+    rejected: 'border-l-4 border-red-400 bg-gray-800'
   }
   const { space } = useSpace()
   const canApprove = (status: SpaceMember['status']) => status === 'pending'
@@ -71,14 +72,13 @@ export default function RequestList({
         }}
         title="リクエスト一覧"
         body={
-          loading ?
-          <div className="flex items-center justify-center py-10">
-            <LoadingSpinner size={48} />
-          </div>
-          :
-          <div className="py-3">
-            {
-              requestList.map((request: SpaceMember) => (
+          loading ? (
+            <div className="flex items-center justify-center py-10">
+              <LoadingSpinner size={48} />
+            </div>
+          ) : (
+            <div className="py-3">
+              {requestList.map((request: SpaceMember) => (
                 <div
                   key={request.id}
                   className={`
@@ -88,9 +88,7 @@ export default function RequestList({
                 >
                   {/* 左側 */}
                   <div className="flex items-center gap-3">
-                    <img
-                      className="w-8 h-8 rounded-full"
-                    />
+                    <img className="w-8 h-8 rounded-full" />
                     <div className="text-sm">
                       <div className="flex items-center gap-1">
                         <span className="font-medium"></span>
@@ -100,7 +98,7 @@ export default function RequestList({
                         {request.email}
                       </div>
                       <div className="text-gray-500 text-xs">
-                        {request.userId ? '' : 'まだ招待を承諾していません' }
+                        {request.userId ? '' : 'まだ招待を承諾していません'}
                       </div>
                     </div>
                   </div>
@@ -135,14 +133,13 @@ export default function RequestList({
                     )}
                   </div>
                 </div>
-              ))
-            }
-          </div>
+              ))}
+            </div>
+          )
         }
         footer={
           <>
-            {
-              space.invitationToken &&
+            {space.invitationToken && (
               <>
                 <Button
                   className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded"
@@ -158,9 +155,11 @@ export default function RequestList({
                 <Button
                   className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
                   onClick={() => setInviteFormOpen(true)}
-                >招待する</Button>
+                >
+                  招待する
+                </Button>
               </>
-            }
+            )}
           </>
         }
       />
@@ -170,23 +169,19 @@ export default function RequestList({
           setInviteFormOpen(false)
         }}
         title="メンバーを招待"
-        body={
-          <InviteForm
-            value={members}
-            onChange={setInvitees}
-          />
-        }
+        body={<InviteForm value={members} onChange={setInvitees} />}
         footer={
           <>
-            {
-              space.invitationToken &&
+            {space.invitationToken && (
               <>
                 <Button
                   className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
                   onClick={handleSubmit}
-                >決定</Button>
+                >
+                  決定
+                </Button>
               </>
-            }
+            )}
           </>
         }
       />

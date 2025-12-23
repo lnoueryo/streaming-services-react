@@ -1,6 +1,6 @@
 'use client'
 
-import {  useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSignaling } from '../signaling-provider'
 import Button from '@/components/atoms/Button'
@@ -138,7 +138,7 @@ export default function Room({
     try {
       const { spaceMembers } =
         await spaceMemberRepositoryClient.fetchSpaceMembers(space.id)
-        console.log('fetchSpaceMembers result:', spaceMembers)
+      console.log('fetchSpaceMembers result:', spaceMembers)
       setRequestList(spaceMembers)
     } catch (error) {
       alert('予期せぬエラーが発生しました')
@@ -147,10 +147,15 @@ export default function Room({
     }
   }
 
-  const inviteNewMembers = async (members: { email: string; role: 'member' | 'admin' }[]) => {
-    const { spaceMembers } = await spaceMemberRepositoryClient.inviteMembers(space.id, {
-      members: members.filter((i) => i.email.trim() !== '')
-    })
+  const inviteNewMembers = async (
+    members: { email: string; role: 'member' | 'admin' }[]
+  ) => {
+    const { spaceMembers } = await spaceMemberRepositoryClient.inviteMembers(
+      space.id,
+      {
+        members: members.filter((i) => i.email.trim() !== '')
+      }
+    )
     setRequestList((prev) => [...prev, ...spaceMembers])
     return spaceMembers
   }
@@ -208,8 +213,7 @@ export default function Room({
           >
             切る
           </Button>
-          {
-            space.membership.role === 'owner' &&
+          {space.membership.role === 'owner' && (
             <Button
               onClick={async () => {
                 setRequestModalOpen(true)
@@ -218,9 +222,9 @@ export default function Room({
               className="relative bg-gray-500/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs"
             >
               リクエスト
-
               {pendingCount > 0 && (
-                <span className="
+                <span
+                  className="
                   absolute -top-1 -right-1
                   min-w-[18px] h-[18px]
                   px-1
@@ -228,12 +232,13 @@ export default function Room({
                   rounded-full
                   bg-red-500 text-white
                   text-[10px] font-bold
-                ">
+                "
+                >
                   {pendingCount}
                 </span>
               )}
             </Button>
-          }
+          )}
         </motion.div>
       </div>
       <RequestList
