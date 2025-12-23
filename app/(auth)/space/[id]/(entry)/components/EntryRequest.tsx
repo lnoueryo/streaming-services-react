@@ -29,7 +29,7 @@ export default function EntryRequest({
           prev.filter((r) => r.userId !== request.userId)
         )
         setRequestList((prev) => {
-          if (prev.some((r) => r.id !== request.id)) {
+          if (!prev.some((r) => r.id === request.id)) {
             return [...prev, request]
           }
           return prev.map((r) => {
