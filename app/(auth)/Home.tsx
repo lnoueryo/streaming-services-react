@@ -9,6 +9,8 @@ import Button from '@/components/atoms/Button'
 import { useLoading } from '../LoadingContext'
 import Link from 'next/link'
 import output from '@/config'
+import InviteForm from '@/components/organisms/InviteForm'
+import { ConfirmModal } from '@/components/molecules/ConfirmModal'
 
 export default function Home() {
   const { startLoading, endLoading } = useLoading()
@@ -29,21 +31,6 @@ export default function Home() {
   const [members, setInvitees] = useState<
     { email: string; role: 'member' | 'admin' }[]
   >([{ email: '', role: 'member' }])
-
-  // update invitee email or role
-  const updateInvitee = (idx: number, key: 'email' | 'role', value: string) => {
-    const arr = [...members]
-    arr[idx] = { ...arr[idx], [key]: value } as any
-    setInvitees(arr)
-  }
-
-  const addInvitee = () => {
-    setInvitees([...members, { email: '', role: 'member' }])
-  }
-
-  const removeEmailField = (idx: number) => {
-    setInvitees(members.filter((_, i) => i !== idx))
-  }
 
   const handleSubmit = async () => {
     startLoading()
@@ -107,7 +94,6 @@ export default function Home() {
           </Button>
         </div>
       </div>
-
       <Modal
         open={isOpenCreateRoomForm}
         onClose={() => setIsOpenCreateRoomForm(false)}
@@ -155,48 +141,10 @@ export default function Home() {
 
           {/* Private の場合のみ Emails + Role */}
           {privacy !== 'public' && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                招待するメンバー (任意)
-              </label>
-
-              {members.map((item, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <input
-                    type="email"
-                    value={item.email}
-                    onChange={(e) =>
-                      updateInvitee(idx, 'email', e.target.value)
-                    }
-                    placeholder="email@example.com"
-                    className="flex-1 border rounded px-2 py-1"
-                  />
-
-                  <select
-                    value={item.role}
-                    onChange={(e) => updateInvitee(idx, 'role', e.target.value)}
-                    className="border rounded px-2 py-1"
-                  >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </select>
-
-                  <button
-                    className="text-red-500 font-bold"
-                    onClick={() => removeEmailField(idx)}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-
-              <button
-                className="text-sm underline text-gray-600"
-                onClick={addInvitee}
-              >
-                + さらに追加
-              </button>
-            </div>
+            <InviteForm
+              value={members}
+              onChange={setInvitees}
+            />
           )}
 
           {/* Submit ボタン */}
@@ -217,37 +165,36 @@ export default function Home() {
         </div>
       </Modal>
 
-      <Modal open={createdModal && !!spaceCreated} onClose={() => setCreatedModal(false)} persistent>
-        <div className="space-y-4 p-4 w-full max-w-md rounded shadow-lg">
-          <h2 className="text-xl font-semibold">スペースが作成されました</h2>
-
-          <p className="text-sm">
-            下記のURLを共有してください。招待されたメンバーはこのURLから
-            スペースに参加できます。
-          </p>
-
+      <ConfirmModal
+        open={createdModal && !!spaceCreated}
+        onClose={() => setCreatedModal(false)}
+        title="スペースが作成されました"
+        message="下記のURLを共有してください。招待されたメンバーはこのURLからスペースに参加できます。"
+        body={
           <div className="mt-2 py-2 text-sm text-blue-700 rounded break-all">
             <Link href={`${spaceCreated?.url}`}>
               {output.streamingApiFrontendOrigin}{spaceCreated?.url}
             </Link>
           </div>
-
+        }
+        footer={
           <div className="flex items-center justify-end gap-2">
-            <button
+            <Button
               onClick={() => setCreatedModal(false)}
               className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
             >
               閉じる
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleCopy}
               className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
             >
               URL をコピー
-            </button>
+            </Button>
           </div>
-        </div>
-      </Modal>
+        }
+        persistent
+      />
     </>
   )
 }

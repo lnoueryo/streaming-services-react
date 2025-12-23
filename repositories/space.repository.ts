@@ -31,6 +31,7 @@ export type SpaceResponse = Pick<Space, 'id' | 'privacy' | 'membership'> & {
     image: string
   }[]
   isParticipated: boolean
+  invitationToken?: string
 }
 
 export type SpacesResponse = {
