@@ -209,6 +209,7 @@ export default function usePeer() {
     onICEConnectionStateHandler,
     onConnectionStateHandler,
     remoteStreams,
+    credentialRef,
     setRemoteStreams
   }
 }

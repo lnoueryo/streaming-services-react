@@ -12,9 +12,8 @@ import { logger } from '@/lib/logger'
 
 export default function SpacePage() {
   const { space, setSpace } = useSpace()
-  const { customMessageHandlers, localStreamRef, connectWS, hangup } =
+  const { customMessageHandlers, localStreamRef, credentialRef, connectWS, hangup } =
     useSignaling()
-  const credentialRef = useRef<TurnCredential | null>(null)
   const [spaceState, setSpaceState] = useState<
     'reception' | 'lobby' | 'room' | 'exit'
   >('reception')
