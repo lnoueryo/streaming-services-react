@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSignaling } from '../signaling-provider'
 import Button from '@/components/atoms/Button'
-import { logger } from '@/lib/logger'
 import RemoteVideo, {
   RemoteVideoType
 } from '@/components/organisms/RemoteVideo'
@@ -15,69 +14,30 @@ import { SpaceMember } from '@/repositories/space-member.repository'
 import RequestList from './RequestList'
 import EntryRequest from './EntryRequest'
 
-type TrackParticipant = {
-  [streamId: string]: {
-    id: string
-    name: string
-    email: string
-    image: string
-    trackId: string
-    streamId: string
-  }
-}
-
 export default function Room({
-  setSpaceState
+  setSpaceState,
+  remoteVideos,
+  entryRequests,
+  requestList,
+  setRequestList,
+  setEntryRequests,
 }: {
-  setSpaceState: (state: 'exit') => void
+  setSpaceState: (state: 'exit') => void,
+  remoteVideos: RemoteVideoType[],
+  entryRequests: SpaceMember[]
+  requestList: SpaceMember[],
+  setRequestList: React.Dispatch<React.SetStateAction<SpaceMember[]>>
+  setEntryRequests: React.Dispatch<React.SetStateAction<SpaceMember[]>>
 }) {
-  const { localStreamRef, hangup, remoteStreams, customMessageHandlers } =
+  const { localStreamRef, hangup, channelsRef } =
     useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const { space } = useSpace()
-  const [participantTrack, setParticipantTrack] = useState<TrackParticipant>({})
-  const [remoteVideos, setRemoteVideos] = useState<RemoteVideoType[]>([])
-  const [entryRequests, setEntryRequests] = useState<SpaceMember[]>([])
   const [requestModalOpen, setRequestModalOpen] = useState(false)
-  const [requestList, setRequestList] = useState<SpaceMember[]>([])
   const [requestLoading, setRequestLoading] = useState(false)
   const pendingCount = requestList.filter(
     (r: SpaceMember) => r.status === 'pending'
   ).length
-  customMessageHandlers.current['track-participant'] = (data: string) => {
-    const trackParticipants: TrackParticipant = JSON.parse(data)
-    setParticipantTrack(trackParticipants)
-    logger.log('WS EVENT', 'track-participant: ', participantTrack)
-  }
-  customMessageHandlers.current['duplicate-participant'] = () => {
-    alert('別の端末から同じアカウントで入室があったため、退室します。')
-    setSpaceState('exit')
-    logger.log('WS EVENT', 'duplicate-participant: ', participantTrack)
-  }
-  if (space.membership.role === 'owner') {
-    customMessageHandlers.current['accept-invitation'] = (data: string) => {
-      const spaceMember = JSON.parse(data)
-      setRequestList((prev) => {
-        if (prev.some((r) => r.id === spaceMember.id)) {
-          return prev.map((r) => {
-            if (r.id === spaceMember.id) {
-              return spaceMember
-            }
-            return r
-          })
-        }
-        return [...prev, spaceMember]
-      })
-      logger.log('WS EVENT', 'participant-request: ', spaceMember)
-    }
-    customMessageHandlers.current['participant-request'] = (data: string) => {
-      const participant = JSON.parse(data)
-      setEntryRequests((prev) => {
-        return [...prev, participant]
-      })
-      logger.log('WS EVENT', 'participant-request: ', participant)
-    }
-  }
 
   useEffect(() => {
     space.membership.role === 'owner' && fetchSpaceMembers()
@@ -90,20 +50,6 @@ export default function Room({
       }
     })
   }, [localVideoRef.current])
-  useEffect(() => {
-    // track追加と参加者の情報取得は順不同の可能性が高いので、両方のstateが変化したらマージしてremoteVideosを更新する
-    const newRemoteVideos: RemoteVideoType[] = []
-    for (const remoteStream of remoteStreams) {
-      if (remoteStream.streamId in participantTrack === false) {
-        continue
-      }
-      newRemoteVideos.push({
-        ...remoteStream,
-        ...participantTrack[remoteStream.streamId]
-      })
-    }
-    setRemoteVideos(newRemoteVideos)
-  }, [remoteStreams, participantTrack])
 
   const decideRequest = async (
     spaceMemberId: number,

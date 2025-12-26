@@ -25,6 +25,9 @@ export default function useSignaling(url: string) {
     onICEConnectionStateHandler,
     onOriginalICEConnectionStateHandler,
     onConnectionStateHandler,
+    customOpenHandlers,
+    customDataMessageHandlers,
+    channelsRef,
     onOriginalConnectionStateHandler
   } = usePeer()
 
@@ -166,11 +169,15 @@ export default function useSignaling(url: string) {
   return {
     connectWS,
     connectPeer,
+    disconnectPeerConnection,
     localStreamRef,
     credentialRef,
     remoteStreams,
     connectionState,
     customMessageHandlers,
+    customOpenHandlers,
+    customDataMessageHandlers,
+    channelsRef,
     hangup
   }
 }

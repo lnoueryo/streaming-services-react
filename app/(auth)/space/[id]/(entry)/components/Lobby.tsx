@@ -17,26 +17,12 @@ export default function Lobby({
 }) {
   const { space, setSpace } = useSpace()
   const user = useUser()
-  const { localStreamRef, customMessageHandlers, connectPeer } = useSignaling()
+  const { localStreamRef, connectPeer } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
     space.isParticipated
   )
   const [isRightAfterEntry, setIsRightAfterEntry] = useState(true)
-  customMessageHandlers.current['request-decision'] = (data: string) => {
-    const participant = JSON.parse(data)
-    logger.log('WS EVENT', 'request-decision: ', participant)
-    if (participant.status === 'rejected') {
-      return (location.href = '/')
-    }
-    setSpace({
-      ...space,
-      membership: {
-        ...space.membership,
-        status: participant.status
-      }
-    })
-  }
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localVideoRef.current) {
