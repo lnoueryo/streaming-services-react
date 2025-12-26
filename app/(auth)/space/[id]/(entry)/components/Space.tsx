@@ -25,7 +25,7 @@ type TrackParticipant = {
 
 export default function SpacePage() {
   const { space, setSpace } = useSpace()
-  const { customMessageHandlers, localStreamRef, credentialRef, remoteStreams, customOpenHandlers, customDataMessageHandlers, connectWS, hangup } =
+  const { customMessageHandlers, localStreamRef, credentialRef, remoteStreams, customDataMessageHandlers, connectWS, hangup } =
     useSignaling()
   const [spaceState, setSpaceState] = useState<
     'reception' | 'lobby' | 'room' | 'exit'

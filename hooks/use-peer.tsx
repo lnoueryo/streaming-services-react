@@ -13,7 +13,6 @@ const config: RTCConfiguration = {
 export default function usePeer() {
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const channelsRef = useRef<Record<string, RTCDataChannel>>({})
-  const customOpenHandlers = useRef<Record<keyof typeof channelsRef.current, (ev: Event) => void>>({})
   const customDataMessageHandlers = useRef<Record<keyof typeof channelsRef.current, Record<string, (data: any) => void>>>({})
   const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([])
   const credentialRef = useRef<TurnCredential | null>(null)
@@ -90,7 +89,6 @@ export default function usePeer() {
           performance.now(),
           ev
         )
-        customOpenHandlers.current[dc.label]?.(ev)
       }
       dc.onmessage = (event) => {
         logger.debug(
@@ -281,7 +279,6 @@ export default function usePeer() {
     onConnectionStateHandler,
     remoteStreams,
     credentialRef,
-    customOpenHandlers,
     customDataMessageHandlers,
     channelsRef,
     setRemoteStreams

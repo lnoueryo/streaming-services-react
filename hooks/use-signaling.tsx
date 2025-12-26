@@ -25,7 +25,6 @@ export default function useSignaling(url: string) {
     onICEConnectionStateHandler,
     onOriginalICEConnectionStateHandler,
     onConnectionStateHandler,
-    customOpenHandlers,
     customDataMessageHandlers,
     channelsRef,
     onOriginalConnectionStateHandler
@@ -174,7 +173,6 @@ export default function useSignaling(url: string) {
     remoteStreams,
     connectionState,
     customMessageHandlers,
-    customOpenHandlers,
     customDataMessageHandlers,
     channelsRef,
     hangup
