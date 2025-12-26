@@ -1,6 +1,5 @@
 import { logger } from '@/lib/logger'
 import { TurnCredential } from '@/repositories/signaling.repository'
-import { credential } from 'firebase-admin'
 import { useEffect, useRef, useState } from 'react'
 export type RemoteStream = {
   id: string
@@ -159,6 +158,10 @@ export default function usePeer() {
 
   const disconnectPeerConnection = () => {
     try {
+      Object.keys(channelsRef.current).forEach((key) => {
+        channelsRef.current[key].close()
+        delete channelsRef.current[key]
+      })
       pcRef.current?.close()
       pcRef.current = null
       retry.current = 0

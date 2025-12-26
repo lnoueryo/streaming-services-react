@@ -48,10 +48,7 @@ export default function SpacePage() {
       }
     })
   }
-  customMessageHandlers.current['close'] = async (data) => {
-    await hangup()
-    setSpaceState('exit')
-  }
+  // WSメッセージハンドラー登録
   customMessageHandlers.current['access'] = (data) => {
     const participants = JSON.parse(data)
     logger.log('WS EVENT', 'access: ', participants)
@@ -61,6 +58,7 @@ export default function SpacePage() {
     })
   }
 
+  // DCメッセージハンドラー登録
   customDataMessageHandlers.current['room'] = {}
   customDataMessageHandlers.current['room']['test'] = (data: any) => {
     logger.log('DC EVENT', 'test: ', data)
@@ -93,6 +91,11 @@ export default function SpacePage() {
       return [...prev, participant]
     })
     logger.log('WS EVENT', 'participant-request: ', participant)
+  }
+  customDataMessageHandlers.current['room']['close'] = async () => {
+    console.log('close received')
+    await hangup()
+    setSpaceState('exit')
   }
   useEffect(() => {
     logger.info('Space', `spaceState changed: ${spaceState}`)

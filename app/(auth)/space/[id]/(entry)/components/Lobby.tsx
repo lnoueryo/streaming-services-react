@@ -8,7 +8,6 @@ import { useSignaling } from '../signaling-provider'
 import { useUser } from '@/app/(auth)/user-provider'
 import Button from '@/components/atoms/Button'
 import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
-import { logger } from '@/lib/logger'
 
 export default function Lobby({
   setSpaceState
@@ -17,12 +16,9 @@ export default function Lobby({
 }) {
   const { space, setSpace } = useSpace()
   const user = useUser()
-  const { localStreamRef, connectPeer } = useSignaling()
+  const { localStreamRef, connectPeer, disconnectPeerConnection } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
-  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(
-    space.isParticipated
-  )
-  const [isRightAfterEntry, setIsRightAfterEntry] = useState(true)
+  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(false)
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localVideoRef.current) {
@@ -31,16 +27,19 @@ export default function Lobby({
       }
     })
   }, [localVideoRef.current])
-  const enableEntry = async (params?: { force: boolean }) => {
+
+  const enterRoom = async (params?: { force: boolean }) => {
     try {
+      await connectPeer()
       const spaceRes = await spaceRepositoryClient.enableEntry(space.id, params)
       setSpace(spaceRes)
       if (spaceRes.isParticipated) {
         return setIsOpenRejoinConfirmation(true)
       }
       setIsOpenRejoinConfirmation(false)
-      return true
+      setSpaceState('room')
     } catch (error) {
+      disconnectPeerConnection()
       if (error instanceof ApiFetchError) {
         if (error.statusCode === 403) {
           alert(error.message)
@@ -52,27 +51,8 @@ export default function Lobby({
           location.href = '/'
           return
         }
-        return
-      }
-      alert('予期せぬエラーが発生しました')
-    }
-  }
-  const enterRoom = async (params?: { force: boolean }) => {
-    setIsRightAfterEntry(false)
-    const isEntryReady = await enableEntry(params)
-    if (!isEntryReady) {
-      return
-    }
-    try {
-      await connectPeer()
-      setSpaceState('room')
-      setIsRightAfterEntry(true)
-    } catch (error) {
-      if (error instanceof ApiFetchError) {
-        if (error.statusCode === 404) {
-          alert('ルームが見つかりませんでした')
-          location.href = '/'
-          return
+        if (error.statusCode === 409) {
+          setIsOpenRejoinConfirmation(true)
         }
         return
       }
@@ -185,7 +165,6 @@ export default function Lobby({
           open={isOpenRejoinConfirmation}
           onClose={() => {
             setIsOpenRejoinConfirmation(false)
-            setIsRightAfterEntry(false)
           }}
         >
           <div>
@@ -199,7 +178,6 @@ export default function Lobby({
                 className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded transition"
                 onClick={() => {
                   setIsOpenRejoinConfirmation(false)
-                  setIsRightAfterEntry(false)
                 }}
               >
                 キャンセル
@@ -207,9 +185,7 @@ export default function Lobby({
               <Button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition"
                 onClick={async () =>
-                  isRightAfterEntry
-                    ? await enableEntry({ force: true })
-                    : await enterRoom({ force: true })
+                  await enterRoom({ force: true })
                 }
               >
                 OK

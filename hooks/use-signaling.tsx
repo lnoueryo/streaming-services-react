@@ -134,7 +134,6 @@ export default function useSignaling(url: string) {
         .catch((e) => logger.error('queued ICE err:', e))
     }
     queuedRef.current.candidates = []
-    sendWS({ event: 'offer' })
   }
 
   const hangup = async () => {
