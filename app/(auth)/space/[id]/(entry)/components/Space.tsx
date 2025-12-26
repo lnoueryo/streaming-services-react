@@ -52,28 +52,6 @@ export default function SpacePage() {
     await hangup()
     setSpaceState('exit')
   }
-  customMessageHandlers.current['accept-invitation'] = (data: string) => {
-    const spaceMember = JSON.parse(data)
-    setRequestList((prev) => {
-      if (prev.some((r) => r.id === spaceMember.id)) {
-        return prev.map((r) => {
-          if (r.id === spaceMember.id) {
-            return spaceMember
-          }
-          return r
-        })
-      }
-      return [...prev, spaceMember]
-    })
-    logger.log('WS EVENT', 'participant-request: ', spaceMember)
-  }
-  customMessageHandlers.current['participant-request'] = (data: string) => {
-    const participant = JSON.parse(data)
-    setEntryRequests((prev) => {
-      return [...prev, participant]
-    })
-    logger.log('WS EVENT', 'participant-request: ', participant)
-  }
   customMessageHandlers.current['access'] = (data) => {
     const participants = JSON.parse(data)
     logger.log('WS EVENT', 'access: ', participants)
@@ -82,20 +60,7 @@ export default function SpacePage() {
       participants
     })
   }
-  customMessageHandlers.current['accept-invitation'] = (data: string) => {
-    const spaceMember = JSON.parse(data)
-    setRequestList((prev) => {
-      if (prev.some((r) => r.id === spaceMember.id)) {
-        return prev.map((r) => {
-          if (r.id === spaceMember.id) {
-            return spaceMember
-          }
-          return r
-        })
-      }
-      return [...prev, spaceMember]
-    })
-  }
+
   customDataMessageHandlers.current['room'] = {}
   customDataMessageHandlers.current['room']['test'] = (data: any) => {
     logger.log('DC EVENT', 'test: ', data)
@@ -108,6 +73,26 @@ export default function SpacePage() {
     alert('別の端末から同じアカウントで入室があったため、退室します。')
     setSpaceState('exit')
     logger.log('DC EVENT', 'duplicate-participant: ', participantTrack)
+  }
+  customDataMessageHandlers.current['room']['accept-invitation'] = (spaceMember: SpaceMember) => {
+    setRequestList((prev) => {
+      if (prev.some((r) => r.id === spaceMember.id)) {
+        return prev.map((r) => {
+          if (r.id === spaceMember.id) {
+            return spaceMember
+          }
+          return r
+        })
+      }
+      return [...prev, spaceMember]
+    })
+    logger.log('WS EVENT', 'accept-invitation: ', spaceMember)
+  }
+  customDataMessageHandlers.current['room']['participant-request'] = (participant: SpaceMember) => {
+    setEntryRequests((prev) => {
+      return [...prev, participant]
+    })
+    logger.log('WS EVENT', 'participant-request: ', participant)
   }
   useEffect(() => {
     logger.info('Space', `spaceState changed: ${spaceState}`)
