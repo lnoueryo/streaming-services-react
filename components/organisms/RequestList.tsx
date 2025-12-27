@@ -20,7 +20,7 @@ export default function RequestList({
 }: {
   space?: {
     id: string
-    invitationToken: string
+    invitationToken?: string
   }
   isOpen: boolean
   setIsOpen: (open: boolean) => void

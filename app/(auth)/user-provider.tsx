@@ -6,7 +6,7 @@ export interface AuthUser {
   id: string
   email?: string
   name: string
-  picture?: string
+  image?: string
 }
 
 const UserContext = createContext<AuthUser | null>(null)
