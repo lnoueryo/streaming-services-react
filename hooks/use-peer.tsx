@@ -13,7 +13,12 @@ const config: RTCConfiguration = {
 export default function usePeer() {
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const channelsRef = useRef<Record<string, RTCDataChannel>>({})
-  const customDataMessageHandlers = useRef<Record<keyof typeof channelsRef.current, Record<string, (data: any) => void>>>({})
+  const customDataMessageHandlers = useRef<
+    Record<
+      keyof typeof channelsRef.current,
+      Record<string, (data: any) => void>
+    >
+  >({})
   const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([])
   const credentialRef = useRef<TurnCredential | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -76,19 +81,9 @@ export default function usePeer() {
       if (dc.label in customDataMessageHandlers.current === false) {
         customDataMessageHandlers.current[dc.label] = {}
       }
-      logger.debug(
-        'DC Register',
-        'color: purple',
-        performance.now(),
-        dc.label
-      )
+      logger.debug('DC Register', 'color: purple', performance.now(), dc.label)
       dc.onopen = (ev) => {
-        logger.info(
-          'DC Open',
-          'color: green',
-          performance.now(),
-          ev
-        )
+        logger.info('DC Open', 'color: green', performance.now(), ev)
       }
       dc.onmessage = (event) => {
         try {
@@ -165,11 +160,7 @@ export default function usePeer() {
     if (messageHandlers) {
       const messageHandler = messageHandlers[data.event]
       if (messageHandler) {
-          logger.debug(
-            'DC EVENT',
-            performance.now(),
-            data
-          )
+        logger.debug('DC EVENT', performance.now(), data)
         return await messageHandler(data.message)
       }
       logger.warn('DC', 'unknown event:', label, data)

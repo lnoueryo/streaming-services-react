@@ -18,15 +18,14 @@ export default function Room({
   setSpaceState,
   remoteVideos,
   entryRequests,
-  setEntryRequests,
+  setEntryRequests
 }: {
-  setSpaceState: (state: 'exit') => void,
-  remoteVideos: RemoteVideoType[],
+  setSpaceState: (state: 'exit') => void
+  remoteVideos: RemoteVideoType[]
   entryRequests: SpaceMember[]
   setEntryRequests: React.Dispatch<React.SetStateAction<SpaceMember[]>>
 }) {
-  const { localStreamRef, hangup } =
-    useSignaling()
+  const { localStreamRef, hangup } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const { space } = useSpace()
   const [requestModalOpen, setRequestModalOpen] = useState(false)
@@ -37,7 +36,7 @@ export default function Room({
     pendingCount,
     decideRequest,
     fetchSpaceMembers,
-    inviteNewMembers,
+    inviteNewMembers
   } = useSpaceMember()
 
   useEffect(() => {

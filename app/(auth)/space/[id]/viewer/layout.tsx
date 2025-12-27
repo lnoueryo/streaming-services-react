@@ -17,11 +17,13 @@ export default async function ViewerLayout({
   try {
     const space = await spaceRepositoryServer.getTargetSpace(id)
     return (
-        <SpaceMemberProvider initialSpace={space}>
-          <SignalingProvider url={`${output.signalingOrigin}/ws/live/${id}/viewer`}>
-            {children}
-          </SignalingProvider>
-        </SpaceMemberProvider>
+      <SpaceMemberProvider initialSpace={space}>
+        <SignalingProvider
+          url={`${output.signalingOrigin}/ws/live/${id}/viewer`}
+        >
+          {children}
+        </SignalingProvider>
+      </SpaceMemberProvider>
     )
   } catch (error) {
     if (error instanceof ApiFetchError) {

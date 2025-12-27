@@ -9,9 +9,7 @@ import Room from './Room'
 import Exit from './Exit'
 import { logger } from '@/lib/logger'
 import { SpaceMember } from '@/repositories/space-member.repository'
-import {
-  RemoteVideoType
-} from '@/components/organisms/RemoteVideo'
+import { RemoteVideoType } from '@/components/organisms/RemoteVideo'
 import { useSpaceMember } from '../space-member-provider'
 type TrackParticipant = {
   [streamId: string]: {
@@ -26,11 +24,16 @@ type TrackParticipant = {
 
 export default function SpacePage() {
   const { space, setSpace } = useSpace()
+  const { setRequestList } = useSpaceMember()
   const {
-    setRequestList,
-  } = useSpaceMember()
-  const { customMessageHandlers, localStreamRef, credentialRef, remoteStreams, customDataMessageHandlers, connectWS, hangup } =
-    useSignaling()
+    customMessageHandlers,
+    localStreamRef,
+    credentialRef,
+    remoteStreams,
+    customDataMessageHandlers,
+    connectWS,
+    hangup
+  } = useSignaling()
   const [spaceState, setSpaceState] = useState<
     'reception' | 'lobby' | 'room' | 'exit'
   >('reception')
@@ -66,7 +69,9 @@ export default function SpacePage() {
   customDataMessageHandlers.current['room']['test'] = (data: any) => {
     logger.log('DC EVENT', 'test: ', data)
   }
-  customDataMessageHandlers.current['room']['track-participant'] = (data: TrackParticipant) => {
+  customDataMessageHandlers.current['room']['track-participant'] = (
+    data: TrackParticipant
+  ) => {
     setParticipantTrack(data)
     logger.log('DC EVENT', 'track-participant: ', participantTrack)
   }
@@ -75,7 +80,9 @@ export default function SpacePage() {
     setSpaceState('exit')
     logger.log('DC EVENT', 'duplicate-participant: ', participantTrack)
   }
-  customDataMessageHandlers.current['room']['change-member-state'] = (spaceMember: SpaceMember) => {
+  customDataMessageHandlers.current['room']['change-member-state'] = (
+    spaceMember: SpaceMember
+  ) => {
     if (spaceMember.status === 'pending') {
       setEntryRequests((prev) => {
         return [...prev, spaceMember]
@@ -94,7 +101,9 @@ export default function SpacePage() {
     })
     logger.log('WS EVENT', 'change-member-state: ', spaceMember)
   }
-  customDataMessageHandlers.current['room']['participant-request'] = (participant: SpaceMember) => {
+  customDataMessageHandlers.current['room']['participant-request'] = (
+    participant: SpaceMember
+  ) => {
     setEntryRequests((prev) => {
       return [...prev, participant]
     })

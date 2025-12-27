@@ -26,21 +26,38 @@ type TrackParticipant = {
 }
 
 export default function Monitor() {
-  const { credentialRef, remoteStreams, customDataMessageHandlers, connectWS, connectPeer, sendWS } =
-    useSignaling()
-  const { requestList, requestLoading, setRequestList, pendingCount, decideRequest, fetchSpaceMembers } = useSpaceMember()
+  const {
+    credentialRef,
+    remoteStreams,
+    customDataMessageHandlers,
+    connectWS,
+    connectPeer,
+    sendWS
+  } = useSignaling()
+  const {
+    requestList,
+    requestLoading,
+    setRequestList,
+    pendingCount,
+    decideRequest,
+    fetchSpaceMembers
+  } = useSpaceMember()
   const [participantTrack, setParticipantTrack] = useState<TrackParticipant>({})
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideoType[]>([])
   const [ready, setReady] = useState(false)
   const [requestModalOpen, setRequestModalOpen] = useState(false)
 
   customDataMessageHandlers.current['room'] = {}
-  customDataMessageHandlers.current['room']['track-participant'] = (data: TrackParticipant) => {
+  customDataMessageHandlers.current['room']['track-participant'] = (
+    data: TrackParticipant
+  ) => {
     console.log('DATA', data)
     setParticipantTrack(data)
     logger.log('DC EVENT', 'track-participant: ', participantTrack)
   }
-  customDataMessageHandlers.current['room']['change-member-state'] = (spaceMember: SpaceMember) => {
+  customDataMessageHandlers.current['room']['change-member-state'] = (
+    spaceMember: SpaceMember
+  ) => {
     setRequestList((prev) => {
       if (prev.some((r) => r.id === spaceMember.id)) {
         return prev.map((r) => {
@@ -106,9 +123,8 @@ export default function Monitor() {
       `}
         >
           <AnimatePresence>
-            {ready && remoteVideos.map((v) => (
-              <RemoteVideo {...v} key={v.id} />
-            ))}
+            {ready &&
+              remoteVideos.map((v) => <RemoteVideo {...v} key={v.id} />)}
           </AnimatePresence>
         </motion.div>
 
@@ -150,7 +166,7 @@ export default function Monitor() {
           </Button>
           <Button
             onClick={async () => {
-              sendWS({ event: 'offer'})
+              sendWS({ event: 'offer' })
               setReady(true)
             }}
             className="relative bg-gray-500/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs"

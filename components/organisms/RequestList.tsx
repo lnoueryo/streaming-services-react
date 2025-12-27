@@ -159,15 +159,14 @@ export default function RequestList({
                 >
                   招待リンク
                 </Button>
-                {
-                  inviteNewMembers &&
+                {inviteNewMembers && (
                   <Button
                     className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
                     onClick={() => setInviteFormOpen(true)}
                   >
                     招待する
                   </Button>
-                }
+                )}
               </>
             )}
           </>

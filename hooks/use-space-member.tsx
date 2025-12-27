@@ -9,7 +9,9 @@ export default function useSpaceMember(space: {
   privacy: 'public' | 'protected' | 'private'
   spaceMembers?: SpaceMember[]
 }) {
-  const [requestList, setRequestList] = useState<SpaceMember[]>(space.spaceMembers || [])
+  const [requestList, setRequestList] = useState<SpaceMember[]>(
+    space.spaceMembers || []
+  )
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [requestLoading, setRequestLoading] = useState(false)
   const pendingCount = requestList.filter(

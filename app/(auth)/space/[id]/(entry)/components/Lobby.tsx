@@ -16,9 +16,11 @@ export default function Lobby({
 }) {
   const { space, setSpace } = useSpace()
   const user = useUser()
-  const { localStreamRef, connectPeer, disconnectPeerConnection } = useSignaling()
+  const { localStreamRef, connectPeer, disconnectPeerConnection } =
+    useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
-  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] = useState(false)
+  const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] =
+    useState(false)
   useEffect(() => {
     requestAnimationFrame(() => {
       if (localVideoRef.current) {
@@ -184,9 +186,7 @@ export default function Lobby({
               </Button>
               <Button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition"
-                onClick={async () =>
-                  await enterRoom({ force: true })
-                }
+                onClick={async () => await enterRoom({ force: true })}
               >
                 OK
               </Button>

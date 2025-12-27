@@ -17,7 +17,7 @@ export default function RemoteVideo({
   id,
   name,
   image,
-  stream,
+  stream
 }: RemoteVideoType) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [muted, setMuted] = useState(false)
@@ -78,7 +78,7 @@ export default function RemoteVideo({
 
       {/* Mute */}
       <button
-        onClick={() => setMuted(v => !v)}
+        onClick={() => setMuted((v) => !v)}
         className="absolute bottom-2 right-2 bg-black/70 text-white p-2 rounded-full"
       >
         {muted ? '🔇' : '🔊'}
