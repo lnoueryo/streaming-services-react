@@ -23,7 +23,7 @@ export type Space = {
   }
 }
 
-export type SpaceResponse = Pick<Space, 'id' | 'privacy' | 'membership'> & {
+export type SpaceResponse = Space & {
   participants: {
     id: string
     name: string
@@ -53,6 +53,14 @@ export type InvitationResponse = {
   redirect: string
 }
 
+export type TargetSpaceResponse = {
+  id: string
+  name?: string
+  privacy: SpacePrivacy
+  creatorId: string
+  spaceMembers: SpaceMember[]
+}
+
 export class SpaceRepository {
   constructor(private client: BaseClient) {}
   public async fetchPublicSpaces(params: {
@@ -60,6 +68,11 @@ export class SpaceRepository {
     limit: number
   }): Promise<SpacesResponse> {
     const res = await this.client.get(`/spaces/public`, params)
+    return res && (await res.json())
+  }
+
+  public async getTargetSpace(id: string): Promise<TargetSpaceResponse> {
+    const res = await this.client.get(`/spaces/${id}`)
     return res && (await res.json())
   }
 

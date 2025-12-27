@@ -1,11 +1,9 @@
-// Server Component（async OK）
-// import Viewer from '@/components/organisms/Viewer'
+import Monitor from './Monitor'
 
-interface PageProps {
-  params: Promise<{ id: string }>
-}
-
-export default async function ViewerPage({ params }: PageProps) {
-  const { id } = await params
-  // return <Viewer id={id} />
+export default function ViewerPage() {
+  return (
+    <>
+      <Monitor />
+    </>
+  )
 }

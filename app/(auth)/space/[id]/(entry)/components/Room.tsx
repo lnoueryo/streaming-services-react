@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSignaling } from '../signaling-provider'
+import { useSignaling } from '../../signaling-provider'
 import Button from '@/components/atoms/Button'
 import RemoteVideo, {
   RemoteVideoType
@@ -10,7 +10,7 @@ import RemoteVideo, {
 import LocalVideo from '@/components/organisms/LocalVideo'
 import { useSpace } from '../space-provider'
 import { SpaceMember } from '@/repositories/space-member.repository'
-import RequestList from './RequestList'
+import RequestList from '../../../../../../components/organisms/RequestList'
 import EntryRequest from './EntryRequest'
 import { useSpaceMember } from '../space-member-provider'
 

@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { SpaceMember } from '@/repositories/space-member.repository'
 import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
-import { SpaceResponse } from '@/repositories/space.repository'
+import { TargetSpaceResponse } from '@/repositories/space.repository'
 
-export default function useSpaceMember(space: SpaceResponse) {
-
-  const [requestList, setRequestList] = useState<SpaceMember[]>([])
+export default function useSpaceMember(space: {
+  id: string
+  name?: string
+  privacy: 'public' | 'protected' | 'private'
+  spaceMembers?: SpaceMember[]
+}) {
+  const [requestList, setRequestList] = useState<SpaceMember[]>(space.spaceMembers || [])
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [requestLoading, setRequestLoading] = useState(false)
   const pendingCount = requestList.filter(

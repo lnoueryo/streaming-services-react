@@ -1,6 +1,5 @@
 'use client'
 
-import { useSpace } from '../space-provider'
 import Button from '@/components/atoms/Button'
 import { ConfirmModal } from '@/components/molecules/ConfirmModal'
 import { JSX, useState } from 'react'
@@ -11,6 +10,7 @@ import { useUser } from '@/app/(auth)/user-provider'
 import InviteForm from '@/components/organisms/InviteForm'
 
 export default function RequestList({
+  space,
   isOpen,
   setIsOpen,
   decideRequest,
@@ -18,13 +18,17 @@ export default function RequestList({
   requestList,
   loading
 }: {
+  space?: {
+    id: string
+    invitationToken: string
+  }
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   decideRequest: (
     memberId: number,
     status: 'none' | 'approved' | 'rejected'
   ) => Promise<void>
-  inviteNewMembers: (
+  inviteNewMembers?: (
     members: { email: string; role: 'member' | 'admin' }[]
   ) => Promise<SpaceMember[]>
   requestList: SpaceMember[]
@@ -43,7 +47,7 @@ export default function RequestList({
     approved: 'border-l-4 border-blue-400 bg-gray-800',
     rejected: 'border-l-4 border-red-400 bg-gray-800'
   }
-  const { space } = useSpace()
+
   const canApprove = (status: SpaceMember['status']) => status === 'pending'
   const canReject = (status: SpaceMember['status']) =>
     status === 'none' || status === 'pending' || status === 'approved'
@@ -54,6 +58,9 @@ export default function RequestList({
   const [inviteFormOpen, setInviteFormOpen] = useState(false)
 
   const handleSubmit = async () => {
+    if (!inviteNewMembers) {
+      return
+    }
     try {
       const spaceMembers = await inviteNewMembers(members)
       setInvitees([{ email: '', role: 'member' }])
@@ -139,7 +146,7 @@ export default function RequestList({
         }
         footer={
           <>
-            {space.invitationToken && (
+            {space?.invitationToken && (
               <>
                 <Button
                   className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded"
@@ -152,12 +159,15 @@ export default function RequestList({
                 >
                   招待リンク
                 </Button>
-                <Button
-                  className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
-                  onClick={() => setInviteFormOpen(true)}
-                >
-                  招待する
-                </Button>
+                {
+                  inviteNewMembers &&
+                  <Button
+                    className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                    onClick={() => setInviteFormOpen(true)}
+                  >
+                    招待する
+                  </Button>
+                }
               </>
             )}
           </>
@@ -172,7 +182,7 @@ export default function RequestList({
         body={<InviteForm value={members} onChange={setInvitees} />}
         footer={
           <>
-            {space.invitationToken && (
+            {space?.invitationToken && (
               <>
                 <Button
                   className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
