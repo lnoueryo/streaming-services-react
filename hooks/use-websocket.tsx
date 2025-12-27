@@ -4,10 +4,6 @@ export type RemoteVideoItem = {
   id: string
   stream: MediaStream
 }
-const config: RTCConfiguration = {
-  iceTransportPolicy: 'all',
-  iceCandidatePoolSize: 3
-}
 export default function useWebsocket(url: string) {
   const wsRef = useRef<WebSocket | null>(null)
   const [wsOpen, setWsOpen] = useState(false)

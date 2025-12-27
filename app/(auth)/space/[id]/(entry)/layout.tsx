@@ -5,6 +5,7 @@ import { SpaceProvider } from './space-provider'
 import { SignalingProvider } from './signaling-provider'
 import output from '@/config'
 import { logger } from '@/lib/logger'
+import { SpaceMemberProvider } from './space-member-provider'
 
 export default async function SpaceAuthLayout({
   children,
@@ -19,9 +20,11 @@ export default async function SpaceAuthLayout({
     const space = await spaceRepositoryServer.enterLobby(id)
     return (
       <SpaceProvider initialSpace={space}>
-        <SignalingProvider url={`${output.signalingOrigin}/ws/live/${id}`}>
-          {children}
-        </SignalingProvider>
+        <SpaceMemberProvider initialSpace={space}>
+          <SignalingProvider url={`${output.signalingOrigin}/ws/live/${id}`}>
+            {children}
+          </SignalingProvider>
+        </SpaceMemberProvider>
       </SpaceProvider>
     )
   } catch (error) {

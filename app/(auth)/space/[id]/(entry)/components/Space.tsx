@@ -12,6 +12,7 @@ import { SpaceMember } from '@/repositories/space-member.repository'
 import {
   RemoteVideoType
 } from '@/components/organisms/RemoteVideo'
+import { useSpaceMember } from '../space-member-provider'
 type TrackParticipant = {
   [streamId: string]: {
     id: string
@@ -25,13 +26,15 @@ type TrackParticipant = {
 
 export default function SpacePage() {
   const { space, setSpace } = useSpace()
+  const {
+    setRequestList,
+  } = useSpaceMember()
   const { customMessageHandlers, localStreamRef, credentialRef, remoteStreams, customDataMessageHandlers, connectWS, hangup } =
     useSignaling()
   const [spaceState, setSpaceState] = useState<
     'reception' | 'lobby' | 'room' | 'exit'
   >('reception')
   const [entryRequests, setEntryRequests] = useState<SpaceMember[]>([])
-  const [requestList, setRequestList] = useState<SpaceMember[]>([])
   const [participantTrack, setParticipantTrack] = useState<TrackParticipant>({})
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideoType[]>([])
   customMessageHandlers.current['request-decision'] = (data: string) => {
@@ -155,8 +158,6 @@ export default function SpacePage() {
           setSpaceState={setSpaceState}
           remoteVideos={remoteVideos}
           entryRequests={entryRequests}
-          requestList={requestList}
-          setRequestList={setRequestList}
           setEntryRequests={setEntryRequests}
         />
       ) : spaceState === 'exit' ? (
