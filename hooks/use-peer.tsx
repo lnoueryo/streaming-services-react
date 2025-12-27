@@ -76,7 +76,7 @@ export default function usePeer() {
       if (dc.label in customDataMessageHandlers.current === false) {
         customDataMessageHandlers.current[dc.label] = {}
       }
-      logger.info(
+      logger.debug(
         'DC Register',
         'color: purple',
         performance.now(),
@@ -91,12 +91,6 @@ export default function usePeer() {
         )
       }
       dc.onmessage = (event) => {
-        logger.debug(
-          'DC EVENT',
-          'color: blue',
-          performance.now(),
-          event.data
-        )
         try {
           const text = new TextDecoder().decode(event.data)
           const data = JSON.parse(text)

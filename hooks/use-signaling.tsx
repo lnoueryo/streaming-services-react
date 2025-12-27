@@ -10,7 +10,7 @@ export default function useSignaling(url: string) {
     customMessageHandlers,
     connectWS,
     sendWS,
-    wsOpen,
+    wsOpenRef,
     wsRef,
     disconnectWSConnection
   } = useWebsocket(url)
@@ -62,7 +62,7 @@ export default function useSignaling(url: string) {
   }
 
   const connectPeer = async () => {
-    if (!wsOpen) {
+    if (!wsOpenRef.current) {
       logger.debug('WS not open')
       return
     }
@@ -78,7 +78,7 @@ export default function useSignaling(url: string) {
     onICEConnectionStateHandler.current = async (e) => {
       await new Promise(async (resolve) => {
         const timer = setInterval(() => {
-          if (wsOpen) {
+          if (wsOpenRef.current) {
             clearTimeout(timer)
             resolve(true)
           }
@@ -94,7 +94,7 @@ export default function useSignaling(url: string) {
     onConnectionStateHandler.current = async (e) => {
       await new Promise(async (resolve) => {
         const timer = setInterval(() => {
-          if (wsOpen) {
+          if (wsOpenRef.current) {
             clearTimeout(timer)
             resolve(true)
           }
@@ -109,7 +109,7 @@ export default function useSignaling(url: string) {
     }
     await createPeer()
     await setupPeer()
-    logger.info('[Peer] ready')
+    logger.info('Peer', 'ready')
   }
 
   const setupPeer = async () => {
@@ -168,6 +168,7 @@ export default function useSignaling(url: string) {
     connectWS,
     connectPeer,
     disconnectPeerConnection,
+    sendWS,
     localStreamRef,
     credentialRef,
     remoteStreams,
@@ -175,6 +176,7 @@ export default function useSignaling(url: string) {
     customMessageHandlers,
     customDataMessageHandlers,
     channelsRef,
+    wsOpenRef,
     hangup
   }
 }

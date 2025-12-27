@@ -11,6 +11,7 @@ const config: RTCConfiguration = {
 export default function useWebsocket(url: string) {
   const wsRef = useRef<WebSocket | null>(null)
   const [wsOpen, setWsOpen] = useState(false)
+  const wsOpenRef = useRef(false)
   const customMessageHandlers = useRef<Record<string, (data: any) => void>>({})
   const retry = useRef(0)
   const maxRetry = 20
@@ -34,7 +35,7 @@ export default function useWebsocket(url: string) {
   }
 
   const connectWS = (timeoutMs = 5000) => {
-    if (wsOpen) {
+    if (wsOpenRef.current) {
       logger.debug(
         '%c[WS ALREADY OPEN]',
         'color: #c6c623ff',
@@ -57,7 +58,7 @@ export default function useWebsocket(url: string) {
         retry.current = 0
         ws.onclose = (e) => {
           logger.info('[WS CLOSE]', performance.now(), url)
-          setWsOpen(false)
+          wsOpenRef.current = false
           onClose.current(e)
         }
         ws.onerror = (e) => {
@@ -65,6 +66,7 @@ export default function useWebsocket(url: string) {
           onError.current(e)
         }
         setWsOpen(true)
+        wsOpenRef.current = true
         resolve(ws)
       }
 
@@ -129,7 +131,7 @@ export default function useWebsocket(url: string) {
     disconnectWSConnection,
     sendWS,
     customMessageHandlers,
-    wsOpen,
+    wsOpenRef,
     wsRef
   }
 }
