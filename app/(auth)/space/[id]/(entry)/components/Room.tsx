@@ -102,7 +102,18 @@ export default function Room({
         members: members.filter((i) => i.email.trim() !== '')
       }
     )
-    setRequestList((prev) => [...prev, ...spaceMembers])
+    spaceMembers.forEach((member) => {
+      if (requestList.some((r) => r.id === member.id)) {
+        setRequestList((prev) =>
+          prev.map((r) => {
+            if (r.id === member.id) {
+              return member
+            }
+            return r
+          })
+        )
+      }
+    })
     return spaceMembers
   }
   return (
@@ -201,7 +212,6 @@ export default function Room({
           <EntryRequest
             request={request}
             setEntryRequests={setEntryRequests}
-            setRequestList={setRequestList}
             decideRequest={decideRequest}
             key={request.id}
           />

@@ -72,7 +72,12 @@ export default function SpacePage() {
     setSpaceState('exit')
     logger.log('DC EVENT', 'duplicate-participant: ', participantTrack)
   }
-  customDataMessageHandlers.current['room']['accept-invitation'] = (spaceMember: SpaceMember) => {
+  customDataMessageHandlers.current['room']['change-member-state'] = (spaceMember: SpaceMember) => {
+    if (spaceMember.status === 'pending') {
+      setEntryRequests((prev) => {
+        return [...prev, spaceMember]
+      })
+    }
     setRequestList((prev) => {
       if (prev.some((r) => r.id === spaceMember.id)) {
         return prev.map((r) => {
@@ -84,7 +89,7 @@ export default function SpacePage() {
       }
       return [...prev, spaceMember]
     })
-    logger.log('WS EVENT', 'accept-invitation: ', spaceMember)
+    logger.log('WS EVENT', 'change-member-state: ', spaceMember)
   }
   customDataMessageHandlers.current['room']['participant-request'] = (participant: SpaceMember) => {
     setEntryRequests((prev) => {
