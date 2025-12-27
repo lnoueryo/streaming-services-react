@@ -11,7 +11,7 @@ type ChatMessage = {
 }
 
 export default function ChatMessageList({
-  messages,
+  messages
 }: {
   messages: ChatMessage[]
 }) {
@@ -25,10 +25,7 @@ export default function ChatMessageList({
       "
     >
       {messages.map((m) => (
-        <div
-          key={m.id}
-          className="flex items-start gap-2 text-sm text-white"
-        >
+        <div key={m.id} className="flex items-start gap-2 text-sm text-white">
           {/* avatar（PCでは見せる／モバイルでも小さく） */}
           {m.user.image && (
             <img

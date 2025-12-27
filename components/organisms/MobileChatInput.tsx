@@ -1,8 +1,8 @@
-import { useState } from "react"
+import { useState } from 'react'
 
 // MobileChatInput.tsx
 export default function MobileChatInput({
-  onSend,
+  onSend
 }: {
   onSend: (text: string) => void
 }) {

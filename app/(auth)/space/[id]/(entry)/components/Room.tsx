@@ -29,7 +29,12 @@ export default function Room({
   remoteVideos: RemoteVideoType[]
   entryRequests: SpaceMember[]
   setEntryRequests: React.Dispatch<React.SetStateAction<SpaceMember[]>>
-  messages: { id: string; user: { id: string; name: string; email: string; image: string }; text: string; createdAt: Date }[]
+  messages: {
+    id: string
+    user: { id: string; name: string; email: string; image: string }
+    text: string
+    createdAt: Date
+  }[]
 }) {
   const user = useUser()
   const { localStreamRef, channelsRef, hangup } = useSignaling()
@@ -195,14 +200,19 @@ export default function Room({
         onClose={() => setChatOpen(false)}
         messages={messages}
         onSend={(text) => {
-            if (!text.trim()) return
+          if (!text.trim()) return
 
-            channelsRef.current['room'].send(
-              JSON.stringify({
-                event: 'chat',
-                message: { id: crypto.randomUUID(), text, user, createdAt: new Date() },
-              })
-            )
+          channelsRef.current['room'].send(
+            JSON.stringify({
+              event: 'chat',
+              message: {
+                id: crypto.randomUUID(),
+                text,
+                user,
+                createdAt: new Date()
+              }
+            })
+          )
         }}
       />
 
@@ -222,7 +232,12 @@ export default function Room({
             channelsRef.current['room'].send(
               JSON.stringify({
                 event: 'chat',
-                message: { id: crypto.randomUUID(), text, user, createdAt: new Date() },
+                message: {
+                  id: crypto.randomUUID(),
+                  text,
+                  user,
+                  createdAt: new Date()
+                }
               })
             )
           }}

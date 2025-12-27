@@ -42,7 +42,12 @@ export default function SpacePage() {
   const [participantTrack, setParticipantTrack] = useState<TrackParticipant>({})
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideoType[]>([])
   const [messages, setMessages] = useState<
-    { id: string; user: { id: string; name: string; email: string; image: string }; text: string, createdAt: Date }[]
+    {
+      id: string
+      user: { id: string; name: string; email: string; image: string }
+      text: string
+      createdAt: Date
+    }[]
   >([])
   customMessageHandlers.current['request-decision'] = (data: string) => {
     const participant = JSON.parse(data)
@@ -116,10 +121,7 @@ export default function SpacePage() {
     setSpaceState('exit')
   }
   customDataMessageHandlers.current['room']['chat'] = async (data) => {
-    setMessages((prev) => [
-      ...prev,
-      data,
-    ])
+    setMessages((prev) => [...prev, data])
   }
   useEffect(() => {
     logger.info('Space', `spaceState changed: ${spaceState}`)

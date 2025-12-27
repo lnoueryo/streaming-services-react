@@ -2,7 +2,7 @@
 import { useState } from 'react'
 
 export default function ChatInput({
-  onSend,
+  onSend
 }: {
   onSend: (text: string) => void
 }) {
@@ -38,10 +38,7 @@ export default function ChatInput({
         "
         placeholder="メッセージを入力"
       />
-      <button
-        onClick={send}
-        className="text-white px-3 text-sm"
-      >
+      <button onClick={send} className="text-white px-3 text-sm">
         送信
       </button>
     </div>

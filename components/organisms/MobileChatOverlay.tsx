@@ -11,11 +11,10 @@ export type ChatMessage = {
 }
 
 export default function MobileChatOverlay({
-  messages,
+  messages
 }: {
   messages: ChatMessage[]
 }) {
-
   return (
     <div
       className="
@@ -56,9 +55,7 @@ export default function MobileChatOverlay({
                 {m.user.name}
               </span>
             </div>
-            <div className="leading-snug line-clamp-2 opacity-90">
-              {m.text}
-            </div>
+            <div className="leading-snug line-clamp-2 opacity-90">{m.text}</div>
           </div>
         </div>
       ))}

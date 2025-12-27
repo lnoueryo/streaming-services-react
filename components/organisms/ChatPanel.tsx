@@ -9,7 +9,7 @@ export default function ChatPanel({
   open,
   onClose,
   messages,
-  onSend,
+  onSend
 }: {
   open: boolean
   onClose: () => void
@@ -37,7 +37,9 @@ export default function ChatPanel({
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-white/10">
             <span className="text-white font-semibold">チャット</span>
-            <button onClick={onClose} className="text-white/70">✕</button>
+            <button onClick={onClose} className="text-white/70">
+              ✕
+            </button>
           </div>
 
           <ChatMessageList messages={messages} />
