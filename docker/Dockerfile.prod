@@ -24,7 +24,7 @@ FROM base AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_PUBLIC_APP_ENV=staging
+ENV NEXT_PUBLIC_APP_ENV=production
 RUN pnpm build
 
 
