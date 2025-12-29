@@ -21,5 +21,6 @@ export default async function InvitationPage({
         return notFound()
       }
     }
+    throw error
   }
 }

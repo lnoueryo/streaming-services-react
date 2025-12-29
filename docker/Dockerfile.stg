@@ -24,7 +24,7 @@ FROM base AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_PUBLIC_APP_ENV=production
+ENV NEXT_PUBLIC_APP_ENV=staging
 RUN pnpm build
 
 
@@ -36,8 +36,6 @@ WORKDIR /app
 
 # ✅ runtime では pnpm を明示インストール（最重要）
 RUN npm install -g pnpm@9.12.0
-
-ENV NODE_ENV=production
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/public ./public

@@ -2,82 +2,54 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSignaling } from '../signaling-provider'
+import { useSignaling } from '../../signaling-provider'
 import Button from '@/components/atoms/Button'
-import { logger } from '@/lib/logger'
 import RemoteVideo, {
   RemoteVideoType
 } from '@/components/organisms/RemoteVideo'
 import LocalVideo from '@/components/organisms/LocalVideo'
-import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
 import { useSpace } from '../space-provider'
 import { SpaceMember } from '@/repositories/space-member.repository'
-import RequestList from './RequestList'
+import RequestList from '../../../../../../components/organisms/RequestList'
 import EntryRequest from './EntryRequest'
-
-type TrackParticipant = {
-  [streamId: string]: {
-    id: string
-    name: string
-    email: string
-    image: string
-    trackId: string
-    streamId: string
-  }
-}
+import { useSpaceMember } from '../space-member-provider'
+import ChatPanel from '@/components/organisms/ChatPanel'
+import MobileChatOverlay from '@/components/organisms/MobileChatOverlay'
+import MobileChatInput from '@/components/organisms/MobileChatInput'
+import { useUser } from '@/app/(auth)/user-provider'
 
 export default function Room({
-  setSpaceState
+  setSpaceState,
+  remoteVideos,
+  entryRequests,
+  setEntryRequests,
+  messages
 }: {
   setSpaceState: (state: 'exit') => void
+  remoteVideos: RemoteVideoType[]
+  entryRequests: SpaceMember[]
+  setEntryRequests: React.Dispatch<React.SetStateAction<SpaceMember[]>>
+  messages: {
+    id: string
+    user: { id: string; name: string; email: string; image: string }
+    text: string
+    createdAt: Date
+  }[]
 }) {
-  const { localStreamRef, hangup, remoteStreams, customMessageHandlers } =
-    useSignaling()
+  const user = useUser()
+  const { localStreamRef, channelsRef, hangup } = useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const { space } = useSpace()
-  const [participantTrack, setParticipantTrack] = useState<TrackParticipant>({})
-  const [remoteVideos, setRemoteVideos] = useState<RemoteVideoType[]>([])
-  const [entryRequests, setEntryRequests] = useState<SpaceMember[]>([])
   const [requestModalOpen, setRequestModalOpen] = useState(false)
-  const [requestList, setRequestList] = useState<SpaceMember[]>([])
-  const [requestLoading, setRequestLoading] = useState(false)
-  const pendingCount = requestList.filter(
-    (r: SpaceMember) => r.status === 'pending'
-  ).length
-  customMessageHandlers.current['track-participant'] = (data: string) => {
-    const trackParticipants: TrackParticipant = JSON.parse(data)
-    setParticipantTrack(trackParticipants)
-    logger.log('WS EVENT', 'track-participant: ', participantTrack)
-  }
-  customMessageHandlers.current['duplicate-participant'] = () => {
-    alert('別の端末から同じアカウントで入室があったため、退室します。')
-    setSpaceState('exit')
-    logger.log('WS EVENT', 'duplicate-participant: ', participantTrack)
-  }
-  if (space.membership.role === 'owner') {
-    customMessageHandlers.current['accept-invitation'] = (data: string) => {
-      const spaceMember = JSON.parse(data)
-      setRequestList((prev) => {
-        if (prev.some((r) => r.id === spaceMember.id)) {
-          return prev.map((r) => {
-            if (r.id === spaceMember.id) {
-              return spaceMember
-            }
-            return r
-          })
-        }
-        return [...prev, spaceMember]
-      })
-      logger.log('WS EVENT', 'participant-request: ', spaceMember)
-    }
-    customMessageHandlers.current['participant-request'] = (data: string) => {
-      const participant = JSON.parse(data)
-      setEntryRequests((prev) => {
-        return [...prev, participant]
-      })
-      logger.log('WS EVENT', 'participant-request: ', participant)
-    }
-  }
+  const [chatOpen, setChatOpen] = useState(false)
+  const {
+    requestList,
+    requestLoading,
+    pendingCount,
+    decideRequest,
+    fetchSpaceMembers,
+    inviteNewMembers
+  } = useSpaceMember()
 
   useEffect(() => {
     space.membership.role === 'owner' && fetchSpaceMembers()
@@ -90,95 +62,27 @@ export default function Room({
       }
     })
   }, [localVideoRef.current])
-  useEffect(() => {
-    // track追加と参加者の情報取得は順不同の可能性が高いので、両方のstateが変化したらマージしてremoteVideosを更新する
-    const newRemoteVideos: RemoteVideoType[] = []
-    for (const remoteStream of remoteStreams) {
-      if (remoteStream.streamId in participantTrack === false) {
-        continue
-      }
-      newRemoteVideos.push({
-        ...remoteStream,
-        ...participantTrack[remoteStream.streamId]
-      })
-    }
-    setRemoteVideos(newRemoteVideos)
-  }, [remoteStreams, participantTrack])
 
-  const decideRequest = async (
-    spaceMemberId: number,
-    status: 'none' | 'approved' | 'rejected'
-  ) => {
-    try {
-      const spaceMember = await spaceMemberRepositoryClient.decideRequest(
-        space.id,
-        spaceMemberId,
-        {
-          status
-        }
-      )
-      setRequestList((prev) => {
-        return prev.map((r) => {
-          if (r.id === spaceMember.id) {
-            return {
-              ...r,
-              status: spaceMember.status
-            }
-          }
-          return r
-        })
-      })
-    } catch (error) {
-      alert('予期せぬエラーが発生しました')
-    }
-  }
-
-  const fetchSpaceMembers = async () => {
-    setRequestLoading(true)
-    try {
-      const { spaceMembers } =
-        await spaceMemberRepositoryClient.fetchSpaceMembers(space.id)
-      console.log('fetchSpaceMembers result:', spaceMembers)
-      setRequestList(spaceMembers)
-    } catch (error) {
-      alert('予期せぬエラーが発生しました')
-    } finally {
-      setRequestLoading(false)
-    }
-  }
-
-  const inviteNewMembers = async (
-    members: { email: string; role: 'member' | 'admin' }[]
-  ) => {
-    const { spaceMembers } = await spaceMemberRepositoryClient.inviteMembers(
-      space.id,
-      {
-        members: members.filter((i) => i.email.trim() !== '')
-      }
-    )
-    setRequestList((prev) => [...prev, ...spaceMembers])
-    return spaceMembers
-  }
   return (
     <>
       <div
         className="
-        relative w-full
-        max-sm:h-[calc(var(--vh,100vh))]
-        md:h-screen
-        bg-black
-        overflow-hidden
-      "
+          relative w-full
+          max-sm:h-[calc(var(--vh,100vh))]
+          md:h-screen
+          bg-black
+          overflow-hidden
+        "
       >
         {/* Remote Grid */}
         <motion.div
           layout
           className={`
-        grid gap-2 w-full h-full p-2 overflow-y-scroll
-        ${remoteVideos.length === 1 ? 'grid-cols-1' : ''}
-        ${remoteVideos.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : ''}
-        ${remoteVideos.length >= 3 ? 'grid-cols-2 sm:grid-cols-3' : ''}
-      `}
+            grid gap-2 w-full h-full p-2 overflow-y-scroll
+            ${remoteVideos.length === 1 ? 'grid-cols-1' : ''}
+            ${remoteVideos.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : ''}
+            ${remoteVideos.length >= 3 ? 'grid-cols-2 sm:grid-cols-3' : ''}
+          `}
         >
           <AnimatePresence>
             {remoteVideos.map((v) => (
@@ -187,7 +91,7 @@ export default function Room({
           </AnimatePresence>
         </motion.div>
 
-        {/* Local PiP（右上に固定） */}
+        {/* Local PiP */}
         <LocalVideo stream={localStreamRef} />
 
         {/* Bottom Control Bar */}
@@ -196,11 +100,14 @@ export default function Room({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
           className="
-        fixed bottom-3 left-1/2 -translate-x-1/2
-        flex items-center gap-3
-        bg-black/40 backdrop-blur-md
-        px-4 py-2 rounded-full shadow-lg
-      "
+            fixed bottom-16 md:bottom-3
+            left-2 right-2
+            md:left-1/2 md:-translate-x-1/2 md:right-auto
+            flex items-center justify-center gap-2
+            bg-black/40 backdrop-blur-md
+            px-3 py-2 rounded-full shadow-lg
+            z-30
+          "
         >
           <Button
             onClick={async () => {
@@ -209,30 +116,55 @@ export default function Room({
               localStreamRef.current = null
               setSpaceState('exit')
             }}
-            className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs"
+            className="
+              bg-red-500/80 hover:bg-red-600
+              text-white px-4 py-3
+              rounded text-x
+              whitespace-nowrap shrink-0
+            "
           >
-            切る
+            📞
           </Button>
+
+          <Button
+            onClick={() => setChatOpen(true)}
+            className="
+              hidden md:inline-flex
+              bg-gray-500/80 hover:bg-gray-600
+              text-white px-4 py-3
+              rounded text-x
+              whitespace-nowrap shrink-0
+            "
+          >
+            💬
+          </Button>
+
           {space.membership.role === 'owner' && (
             <Button
               onClick={async () => {
                 setRequestModalOpen(true)
                 await fetchSpaceMembers()
               }}
-              className="relative bg-gray-500/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs"
+              className="
+                relative
+                bg-gray-500/80 hover:bg-gray-600
+                text-white px-4 py-3
+                rounded text-x
+                whitespace-nowrap shrink-0
+              "
             >
-              リクエスト
+              🫆
               {pendingCount > 0 && (
                 <span
                   className="
-                  absolute -top-1 -right-1
-                  min-w-[18px] h-[18px]
-                  px-1
-                  flex items-center justify-center
-                  rounded-full
-                  bg-red-500 text-white
-                  text-[10px] font-bold
-                "
+                    absolute -top-1 -right-1
+                    min-w-[18px] h-[18px]
+                    px-1
+                    flex items-center justify-center
+                    rounded-full
+                    bg-red-500 text-white
+                    text-[10px] font-bold
+                  "
                 >
                   {pendingCount}
                 </span>
@@ -241,6 +173,8 @@ export default function Room({
           )}
         </motion.div>
       </div>
+
+      {/* 既存 UI */}
       <RequestList
         isOpen={requestModalOpen}
         setIsOpen={setRequestModalOpen}
@@ -248,19 +182,67 @@ export default function Room({
         inviteNewMembers={inviteNewMembers}
         requestList={requestList}
         loading={requestLoading}
+        space={space}
       />
 
-      {entryRequests.map((request) => {
-        return (
-          <EntryRequest
-            request={request}
-            setEntryRequests={setEntryRequests}
-            setRequestList={setRequestList}
-            decideRequest={decideRequest}
-            key={request.id}
-          />
-        )
-      })}
+      {entryRequests.map((request) => (
+        <EntryRequest
+          request={request}
+          setEntryRequests={setEntryRequests}
+          decideRequest={decideRequest}
+          key={request.id}
+        />
+      ))}
+
+      {/* ===== チャット UI（ここが追加部分） ===== */}
+      <ChatPanel
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        messages={messages}
+        onSend={(text) => {
+          if (!text.trim()) return
+
+          channelsRef.current['room'].send(
+            JSON.stringify({
+              event: 'chat',
+              message: {
+                id: crypto.randomUUID(),
+                text,
+                user,
+                createdAt: new Date()
+              }
+            })
+          )
+        }}
+      />
+
+      {/* ===== モバイル用チャット（表示） ===== */}
+      {messages.length > 0 && (
+        <div className="md:hidden">
+          <MobileChatOverlay messages={messages} />
+        </div>
+      )}
+
+      {/* ===== モバイル用チャット（入力） ===== */}
+      <div className="md:hidden">
+        <MobileChatInput
+          onSend={(text) => {
+            if (!text.trim()) return
+
+            channelsRef.current['room'].send(
+              JSON.stringify({
+                event: 'chat',
+                message: {
+                  id: crypto.randomUUID(),
+                  text,
+                  user,
+                  createdAt: new Date()
+                }
+              })
+            )
+          }}
+        />
+      </div>
     </>
   )
 }

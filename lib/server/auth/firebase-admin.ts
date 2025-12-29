@@ -43,6 +43,9 @@ class FirebaseAuth {
   public async revokeRefreshTokens(uid: string) {
     return await this.auth.revokeRefreshTokens(uid)
   }
+  public async setCustomUserClaims(uid: string, claims: object) {
+    return await this.auth.setCustomUserClaims(uid, claims)
+  }
 }
 
 export const auth = new FirebaseAuth(getAuth())

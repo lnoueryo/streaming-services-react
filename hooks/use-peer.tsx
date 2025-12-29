@@ -12,6 +12,13 @@ const config: RTCConfiguration = {
 }
 export default function usePeer() {
   const pcRef = useRef<RTCPeerConnection | null>(null)
+  const channelsRef = useRef<Record<string, RTCDataChannel>>({})
+  const customDataMessageHandlers = useRef<
+    Record<
+      keyof typeof channelsRef.current,
+      Record<string, (data: any) => void>
+    >
+  >({})
   const [remoteStreams, setRemoteStreams] = useState<RemoteStream[]>([])
   const credentialRef = useRef<TurnCredential | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -30,7 +37,7 @@ export default function usePeer() {
       logger.warn('PC', 'Peer already exists')
       return
     }
-
+    console.log(credentialRef.current)
     const pc = new RTCPeerConnection({
       ...config,
       ...credentialRef.current
@@ -66,6 +73,34 @@ export default function usePeer() {
       throw new Error('onICECandidateHandler is null')
     }
     pc.onicecandidate = onICECandidateHandler.current
+
+    // data channel
+    pc.ondatachannel = (event) => {
+      const dc = event.channel
+      channelsRef.current[dc.label] = dc
+      if (dc.label in customDataMessageHandlers.current === false) {
+        customDataMessageHandlers.current[dc.label] = {}
+      }
+      logger.debug('DC Register', 'color: purple', performance.now(), dc.label)
+      dc.onopen = (ev) => {
+        logger.info('DC Open', 'color: green', performance.now(), ev)
+      }
+      dc.onmessage = (event) => {
+        try {
+          const text = new TextDecoder().decode(event.data)
+          const data = JSON.parse(text)
+          handleDataChannelMessage(dc.label, data)
+        } catch {
+          logger.error('DC ERROR', 'failed to parse message', event.data)
+        }
+      }
+      dc.onclose = () => {
+        logger.info('DC CLOSE', 'DataChannel closed', dc.label)
+      }
+      dc.onerror = (err) => {
+        logger.error('DC ERROR', 'DataChannel error', err)
+      }
+    }
     retry.current = 0
   }
 
@@ -110,9 +145,28 @@ export default function usePeer() {
 
   const disconnectPeerConnection = () => {
     try {
+      Object.keys(channelsRef.current).forEach((key) => {
+        channelsRef.current[key].close()
+        delete channelsRef.current[key]
+      })
       pcRef.current?.close()
       pcRef.current = null
+      retry.current = 0
     } catch {}
+  }
+
+  const handleDataChannelMessage = async (label: string, data: any) => {
+    const messageHandlers = customDataMessageHandlers.current[label]
+    if (messageHandlers) {
+      const messageHandler = messageHandlers[data.event]
+      if (messageHandler) {
+        logger.debug('DC EVENT', performance.now(), data)
+        return await messageHandler(data.message)
+      }
+      logger.warn('DC', 'unknown event:', label, data)
+    } else {
+      logger.warn('DC', 'unknown channel:', label, data)
+    }
   }
 
   useEffect(() => {
@@ -210,6 +264,8 @@ export default function usePeer() {
     onConnectionStateHandler,
     remoteStreams,
     credentialRef,
+    customDataMessageHandlers,
+    channelsRef,
     setRemoteStreams
   }
 }

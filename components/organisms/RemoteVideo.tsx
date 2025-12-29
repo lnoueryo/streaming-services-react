@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 
 export type RemoteVideoType = {
@@ -13,71 +13,76 @@ export type RemoteVideoType = {
   stream: MediaStream
 }
 
-export default function RemoteVideo(stream: RemoteVideoType) {
-  const [mutedMap, setMutedMap] = useState<{ [key: string]: boolean }>({})
+export default function RemoteVideo({
+  id,
+  name,
+  image,
+  stream
+}: RemoteVideoType) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [muted, setMuted] = useState(false)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !stream) return
+
+    video.srcObject = stream
+    video.muted = muted
+
+    const play = async () => {
+      try {
+        await video.play()
+      } catch (e) {
+        console.warn('video play failed:', e)
+      }
+    }
+
+    play()
+
+    return () => {
+      if (video.srcObject === stream) {
+        video.srcObject = null
+      }
+    }
+  }, [stream, muted])
+
   return (
-    <>
-      <motion.div
-        key={stream.id}
-        layout
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.85 }}
-        transition={{ duration: 0.25 }}
-        className="relative w-full h-full bg-black rounded-lg overflow-hidden"
-      >
-        <video
-          id={`video-${stream.id}`}
-          playsInline
-          autoPlay
-          muted={!!mutedMap[stream.id]}
-          className="w-full h-full object-cover scale-x-[-1]"
-          ref={(el) => {
-            if (!el) return
-            if (el.srcObject !== stream.stream) {
-              el.srcObject = stream.stream
-              el.onloadedmetadata = () => {
-                el.play().catch(() => {})
-              }
-            }
-          }}
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="relative w-full h-full bg-black rounded-lg overflow-hidden"
+    >
+      {/* video は framer-motion の影響を受けさせない */}
+      <video
+        ref={videoRef}
+        playsInline
+        autoPlay
+        muted={muted}
+        className="w-full h-full object-cover scale-x-[-1]"
+      />
+
+      {/* User Info */}
+      <div className="absolute top-2 left-2 flex items-center gap-2 bg-black/60 px-2 py-1 rounded">
+        <img
+          src={image}
+          alt={name}
+          className="w-6 h-6 rounded-full object-cover"
         />
+        <span className="text-sm font-semibold text-white truncate">
+          {name}
+        </span>
+      </div>
 
-        {/* User Info */}
-        <div className="absolute top-2 left-2 flex items-center gap-2 bg-black/60 px-2 py-1 rounded">
-          <img
-            src={stream.image}
-            alt={stream.name}
-            className="w-6 h-6 rounded-full object-cover"
-          />
-          <span className="text-sm font-semibold text-white truncate">
-            {stream.name}
-          </span>
-        </div>
-
-        {/* 音声アイコン（右下固定） */}
-        <button
-          onClick={() => {
-            const videoEl = document.getElementById(
-              `video-${stream.id}`
-            ) as HTMLVideoElement
-            const newMuted = !mutedMap[stream.id]
-            setMutedMap((prev) => ({ ...prev, [stream.id]: newMuted }))
-            if (videoEl) {
-              videoEl.muted = newMuted
-              if (!newMuted) videoEl.play().catch(() => {})
-            }
-          }}
-          className="
-        absolute bottom-2 right-2
-        bg-black/70 text-white p-2 rounded-full
-        text-lg
-        transition-all
-      "
-        >
-          {mutedMap[stream.id] ? '🔇' : '🔊'}
-        </button>
-      </motion.div>
-    </>
+      {/* Mute */}
+      <button
+        onClick={() => setMuted((v) => !v)}
+        className="absolute bottom-2 right-2 bg-black/70 text-white p-2 rounded-full"
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
+    </motion.div>
   )
 }

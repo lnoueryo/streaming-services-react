@@ -19,7 +19,18 @@ export default async function AuthLayout({
   }
   try {
     const user = await auth.decodeSessionCookie(session, true)
-    return <UserProvider user={user}>{children}</UserProvider>
+    return (
+      <UserProvider
+        user={{
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.picture
+        }}
+      >
+        {children}
+      </UserProvider>
+    )
   } catch (error) {
     logger.debug('next', next)
     return redirect(`/login?next=${encodeURIComponent(next)}`)

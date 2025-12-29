@@ -1,31 +1,29 @@
 import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { spaceRepositoryServer } from '@/lib/repositories/server/space.repository.server'
 import { forbidden, notFound } from 'next/navigation'
-import { SpaceProvider } from './space-provider'
 import { SignalingProvider } from '../signaling-provider'
 import output from '@/config'
 import { logger } from '@/lib/logger'
 import { SpaceMemberProvider } from './space-member-provider'
 
-export default async function SpaceAuthLayout({
+export default async function ViewerLayout({
   children,
   params
 }: {
   children: React.ReactNode
   params: Promise<{ id: string }>
 }) {
-  const _params = await params
-  const id = String(_params.id)
+  const { id } = await params
   try {
-    const space = await spaceRepositoryServer.enterLobby(id)
+    const space = await spaceRepositoryServer.getTargetSpace(id)
     return (
-      <SpaceProvider initialSpace={space}>
-        <SpaceMemberProvider initialSpace={space}>
-          <SignalingProvider url={`${output.signalingOrigin}/ws/live/${id}`}>
-            {children}
-          </SignalingProvider>
-        </SpaceMemberProvider>
-      </SpaceProvider>
+      <SpaceMemberProvider initialSpace={space}>
+        <SignalingProvider
+          url={`${output.signalingOrigin}/ws/live/${id}/viewer`}
+        >
+          {children}
+        </SignalingProvider>
+      </SpaceMemberProvider>
     )
   } catch (error) {
     if (error instanceof ApiFetchError) {
