@@ -4,10 +4,10 @@ import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { spaceRepositoryClient } from '@/lib/repositories/client/space.repository.client'
 import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/atoms/Modal'
-import { useSignaling } from '../../signaling-provider'
 import { useUser } from '@/app/(auth)/user-provider'
 import Button from '@/components/atoms/Button'
 import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
+import { useSignaling } from '@/app/(auth)/space/[id]/signaling-provider'
 
 export default function Lobby({
   setSpaceState
@@ -18,6 +18,7 @@ export default function Lobby({
   const user = useUser()
   const { localStreamRef, connectPeer, disconnectPeerConnection } =
     useSignaling()
+  useSignaling
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const [isOpenRejoinConfirmation, setIsOpenRejoinConfirmation] =
     useState(false)

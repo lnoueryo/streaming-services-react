@@ -3,7 +3,7 @@
 import Button from '@/components/atoms/Button'
 import { ConfirmModal } from '@/components/molecules/ConfirmModal'
 import { JSX, useState } from 'react'
-import { SpaceMember } from '@/repositories/space-member.repository'
+import { SpaceMember, SpaceUser } from '@/repositories/space-member.repository'
 import { LoadingSpinner } from '@/components/atoms/LoadingSpinner'
 import { UserIcon, ShieldCheckIcon, CrownIcon } from 'lucide-react'
 import { useUser } from '@/app/(auth)/user-provider'
@@ -31,7 +31,7 @@ export default function RequestList({
   inviteNewMembers?: (
     members: { email: string; role: 'member' | 'admin' }[]
   ) => Promise<SpaceMember[]>
-  requestList: SpaceMember[]
+  requestList: SpaceUser[]
   loading: boolean
 }) {
   const user = useUser()
@@ -85,17 +85,17 @@ export default function RequestList({
             </div>
           ) : (
             <div className="py-3">
-              {requestList.map((request: SpaceMember) => (
+              {requestList.map((request: SpaceUser) => (
                 <div
                   key={request.id}
                   className={`
-                    flex items-center justify-between mb-2 py-2 rounded
+                    flex items-center justify-between mb-2 py-2 rounded pl-4
                     ${statusStyleMap[request.status]}
                   `}
                 >
                   {/* 左側 */}
                   <div className="flex items-center gap-3">
-                    <img className="w-8 h-8 rounded-full" />
+                    <img src={request.image} className="w-8 h-8 rounded-full" />
                     <div className="text-sm">
                       <div className="flex items-center gap-1">
                         <span className="font-medium"></span>

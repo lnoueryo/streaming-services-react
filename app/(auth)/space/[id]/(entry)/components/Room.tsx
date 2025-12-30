@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSignaling } from '../../signaling-provider'
+import { useSignaling } from '@/app/(auth)/space/[id]/signaling-provider'
 import Button from '@/components/atoms/Button'
 import RemoteVideo, {
   RemoteVideoType
