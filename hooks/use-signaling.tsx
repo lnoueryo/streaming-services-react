@@ -27,9 +27,10 @@ export default function useSignaling(url: string) {
     onConnectionStateHandler,
     customDataMessageHandlers,
     channelsRef,
-    onOriginalConnectionStateHandler
+    lastTimestampRef,
+    onOriginalConnectionStateHandler,
+    readFrames
   } = usePeer()
-
   const queuedRef = useRef({
     offer: null as RTCSessionDescriptionInit | null,
     candidates: [] as RTCIceCandidateInit[]
@@ -103,6 +104,7 @@ export default function useSignaling(url: string) {
       if (pcRef.current) {
         if (await onOriginalConnectionStateHandler(e)) {
           await setupPeer()
+          sendWS({ event: 'offer' })
           return true
         }
       }
@@ -177,6 +179,8 @@ export default function useSignaling(url: string) {
     customDataMessageHandlers,
     channelsRef,
     wsOpenRef,
+    lastTimestampRef,
+    readFrames,
     hangup
   }
 }

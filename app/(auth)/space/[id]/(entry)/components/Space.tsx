@@ -8,7 +8,7 @@ import { useSignaling } from '../../signaling-provider'
 import Room from './Room'
 import Exit from './Exit'
 import { logger } from '@/lib/logger'
-import { SpaceMember } from '@/repositories/space-member.repository'
+import { SpaceMember, SpaceUser } from '@/repositories/space-member.repository'
 import { RemoteVideoType } from '@/components/organisms/RemoteVideo'
 import { useSpaceMember } from '../space-member-provider'
 
@@ -32,6 +32,7 @@ export default function SpacePage() {
     credentialRef,
     remoteStreams,
     customDataMessageHandlers,
+    readFrames,
     connectWS,
     hangup
   } = useSignaling()
@@ -87,7 +88,7 @@ export default function SpacePage() {
     logger.log('DC EVENT', 'duplicate-participant: ', participantTrack)
   }
   customDataMessageHandlers.current['room']['change-member-state'] = (
-    spaceMember: SpaceMember
+    spaceMember: SpaceUser
   ) => {
     if (spaceMember.status === 'pending') {
       setEntryRequests((prev) => {
@@ -162,6 +163,8 @@ export default function SpacePage() {
       audio: true
     })
     localStreamRef.current = stream
+    // streamが作成されてからのフレーム読み取りを開始
+    readFrames(localStreamRef.current)
   }
 
   // ============================================================
