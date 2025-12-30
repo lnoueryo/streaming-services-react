@@ -13,6 +13,10 @@ export type SpaceMember = {
   joinedAt: SpaceMemberStatus
 }
 
+export type SpaceUser = SpaceMember & {
+  name: string
+  image: string
+}
 export class SpaceMemberRepository {
   constructor(private client: BaseClient) {}
 
@@ -41,7 +45,7 @@ export class SpaceMemberRepository {
   }
 
   public async fetchSpaceMembers(spaceId: string): Promise<{
-    spaceMembers: SpaceMember[]
+    spaceMembers: SpaceUser[]
   }> {
     const res = await this.client.get(`/space-members/${spaceId}`)
     return res && (await res.json())
@@ -51,7 +55,7 @@ export class SpaceMemberRepository {
     spaceId: string,
     members: { members: { email: string; role: 'member' | 'admin' }[] }
   ): Promise<{
-    spaceMembers: SpaceMember[]
+    spaceMembers: SpaceUser[]
   }> {
     const res = await this.client.post(`/space-members/${spaceId}`, members)
     return res && (await res.json())

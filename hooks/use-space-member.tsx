@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SpaceMember } from '@/repositories/space-member.repository'
+import { SpaceMember, SpaceUser } from '@/repositories/space-member.repository'
 import { spaceMemberRepositoryClient } from '@/lib/repositories/client/space-member.repository.client'
 import { TargetSpaceResponse } from '@/repositories/space.repository'
 
@@ -7,9 +7,9 @@ export default function useSpaceMember(space: {
   id: string
   name?: string
   privacy: 'public' | 'protected' | 'private'
-  spaceMembers?: SpaceMember[]
+  spaceMembers?: SpaceUser[]
 }) {
-  const [requestList, setRequestList] = useState<SpaceMember[]>(
+  const [requestList, setRequestList] = useState<SpaceUser[]>(
     space.spaceMembers || []
   )
   const [requestModalOpen, setRequestModalOpen] = useState(false)
