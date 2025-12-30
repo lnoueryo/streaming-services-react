@@ -57,7 +57,7 @@ export class SpaceMemberRepository {
   ): Promise<{
     spaceMembers: SpaceUser[]
   }> {
-    const res = await this.client.post(`/space-members/${spaceId}`, members)
+    const res = await this.client.post(`/spaces/invite/${spaceId}`, members)
     return res && (await res.json())
   }
 }
