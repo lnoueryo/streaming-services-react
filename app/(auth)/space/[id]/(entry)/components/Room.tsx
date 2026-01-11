@@ -140,36 +140,76 @@ export default function Room({
           </Button>
 
           {space.membership.role === 'owner' && (
-            <Button
-              onClick={async () => {
-                setRequestModalOpen(true)
-                await fetchSpaceMembers()
-              }}
-              className="
-                relative
-                bg-gray-500/80 hover:bg-gray-600
-                text-white px-4 py-3
-                rounded text-x
-                whitespace-nowrap shrink-0
-              "
-            >
-              🫆
-              {pendingCount > 0 && (
-                <span
-                  className="
-                    absolute -top-1 -right-1
-                    min-w-[18px] h-[18px]
-                    px-1
-                    flex items-center justify-center
-                    rounded-full
-                    bg-red-500 text-white
-                    text-[10px] font-bold
-                  "
-                >
-                  {pendingCount}
-                </span>
-              )}
-            </Button>
+            <>
+              <Button
+                onClick={async () => {
+                  setRequestModalOpen(true)
+                  await fetchSpaceMembers()
+                }}
+                className="
+                  relative
+                  bg-gray-500/80 hover:bg-gray-600
+                  text-white px-4 py-3
+                  rounded text-x
+                  whitespace-nowrap shrink-0
+                "
+              >
+                🫆
+                {pendingCount > 0 && (
+                  <span
+                    className="
+                      absolute -top-1 -right-1
+                      min-w-[18px] h-[18px]
+                      px-1
+                      flex items-center justify-center
+                      rounded-full
+                      bg-red-500 text-white
+                      text-[10px] font-bold
+                    "
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </Button>
+              <Button
+                onClick={() => {
+                  channelsRef.current['room'].send(
+                    JSON.stringify({
+                      event: 'record-start',
+                      message: {}
+                    })
+                  )
+                }}
+                className="
+                  hidden md:inline-flex
+                  bg-gray-500/80 hover:bg-gray-600
+                  text-white px-4 py-3
+                  rounded text-x
+                  whitespace-nowrap shrink-0
+                "
+              >
+                start
+              </Button>
+              <Button
+                onClick={() => {
+                  channelsRef.current['room'].send(
+                    JSON.stringify({
+                      event: 'record-stop',
+                      message: {}
+                    })
+                  )
+                }}
+                className="
+                  hidden md:inline-flex
+                  bg-gray-500/80 hover:bg-gray-600
+                  text-white px-4 py-3
+                  rounded text-x
+                  whitespace-nowrap shrink-0
+                "
+              >
+                stop
+              </Button>
+            </>
           )}
         </motion.div>
       </div>

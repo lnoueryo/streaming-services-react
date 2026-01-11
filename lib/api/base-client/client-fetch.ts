@@ -10,7 +10,7 @@ export class ClientFetch extends BaseClient {
         }
       })
       if (res.status >= 400) {
-        if (res.status === 401) {
+        if (res.status === 403) {
           await this.goToLoginPage.bind(this)()
         }
         const data = await res.json()
