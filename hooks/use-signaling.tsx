@@ -68,7 +68,11 @@ export default function useSignaling(url: string) {
       return
     }
 
-    onICECandidateHandler.current = (e) => {
+    onICECandidateHandler.current = (e: RTCPeerConnectionIceEvent) => {
+      logger.debug(
+        'PC ICE CANDIDATE',
+        e.candidate
+      )
       if (e.candidate) {
         sendWS({
           event: 'candidate',
