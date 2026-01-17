@@ -17,6 +17,8 @@ import ChatPanel from '@/components/organisms/ChatPanel'
 import MobileChatOverlay from '@/components/organisms/MobileChatOverlay'
 import MobileChatInput from '@/components/organisms/MobileChatInput'
 import { useUser } from '@/app/(auth)/user-provider'
+import { useToast } from '@/app/ToastContext'
+import { useLoading } from '@/app/LoadingContext'
 
 export default function Room({
   setSpaceState,
@@ -36,12 +38,17 @@ export default function Room({
     createdAt: Date
   }[]
 }) {
+  const { showToast } = useToast()
+  const { startLoading, endLoading } = useLoading()
   const user = useUser()
-  const { localStreamRef, channelsRef, hangup } = useSignaling()
+  const { localStreamRef, channelsRef, hangup, customDataMessageHandlers } =
+    useSignaling()
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const { space } = useSpace()
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [loading, setLoading] = useState(false)
   const {
     requestList,
     requestLoading,
@@ -50,7 +57,18 @@ export default function Room({
     fetchSpaceMembers,
     inviteNewMembers
   } = useSpaceMember()
-
+  customDataMessageHandlers.current['room']['record-start'] = () => {
+    endLoading()
+    setLoading(false)
+    setRecording(true)
+    showToast('録画が開始されました', 'success')
+  }
+  customDataMessageHandlers.current['room']['record-stop'] = () => {
+    endLoading()
+    setLoading(false)
+    setRecording(false)
+    showToast('録画が停止されました')
+  }
   useEffect(() => {
     space.membership.role === 'owner' && fetchSpaceMembers()
   }, [])
@@ -74,6 +92,37 @@ export default function Room({
           overflow-hidden
         "
       >
+        <AnimatePresence>
+          {recording && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="
+                fixed
+                top-3
+                left-1/2 -translate-x-1/2
+                md:left-4 md:translate-x-0
+                z-40
+                flex items-center gap-2
+                bg-black/70 backdrop-blur
+                px-3 py-1.5
+                rounded-full
+                shadow-lg
+                pointer-events-none
+              "
+            >
+              <motion.span
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="w-3 h-3 rounded-full bg-red-500"
+              />
+              <span className="text-red-400 text-xs font-bold tracking-widest">
+                REC
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Remote Grid */}
         <motion.div
           layout
@@ -96,49 +145,34 @@ export default function Room({
 
         {/* Bottom Control Bar */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.2 }}
           className="
-            fixed bottom-16 md:bottom-3
-            left-2 right-2
-            md:left-1/2 md:-translate-x-1/2 md:right-auto
-            flex items-center justify-center gap-2
-            bg-black/40 backdrop-blur-md
-            px-3 py-2 rounded-full shadow-lg
+            fixed bottom-16 md:bottom-4
+            left-1/2 -translate-x-1/2
+            flex items-center gap-3
+            bg-black/50 backdrop-blur-md
+            px-4 py-3
+            rounded-full shadow-xl
             z-30
           "
         >
-          <Button
-            onClick={async () => {
-              await hangup()
-              localStreamRef.current?.getTracks().forEach((t) => t.stop())
-              localStreamRef.current = null
-              setSpaceState('exit')
-            }}
-            className="
-              bg-red-500/80 hover:bg-red-600
-              text-white px-4 py-3
-              rounded text-x
-              whitespace-nowrap shrink-0
-            "
-          >
-            📞
-          </Button>
-
+          {/* Chat */}
           <Button
             onClick={() => setChatOpen(true)}
             className="
-              hidden md:inline-flex
-              bg-gray-500/80 hover:bg-gray-600
-              text-white px-4 py-3
-              rounded text-x
-              whitespace-nowrap shrink-0
+              hidden md:flex
+              w-11 h-11 rounded-full
+              flex items-center justify-center
+              bg-gray-700 hover:bg-gray-600
+              text-white text-lg
             "
           >
             💬
           </Button>
 
+          {/* Request */}
           {space.membership.role === 'owner' && (
             <>
               <Button
@@ -147,25 +181,25 @@ export default function Room({
                   await fetchSpaceMembers()
                 }}
                 className="
-                  relative
-                  bg-gray-500/80 hover:bg-gray-600
-                  text-white px-4 py-3
-                  rounded text-x
-                  whitespace-nowrap shrink-0
-                "
+                relative
+                w-11 h-11 rounded-full
+                flex items-center justify-center
+                bg-gray-700 hover:bg-gray-600
+                text-white text-lg
+              "
               >
                 🫆
                 {pendingCount > 0 && (
                   <span
                     className="
-                      absolute -top-1 -right-1
-                      min-w-[18px] h-[18px]
-                      px-1
-                      flex items-center justify-center
-                      rounded-full
-                      bg-red-500 text-white
-                      text-[10px] font-bold
-                    "
+                    absolute -top-1 -right-1
+                    w-4 h-4
+                    rounded-full
+                    bg-red-500
+                    text-[9px] font-bold
+                    flex items-center justify-center
+                    text-white
+                  "
                   >
                     {pendingCount}
                   </span>
@@ -173,44 +207,49 @@ export default function Room({
               </Button>
               <Button
                 onClick={() => {
+                  startLoading()
+                  setLoading(true)
                   channelsRef.current['room'].send(
                     JSON.stringify({
-                      event: 'record-start',
+                      event: recording ? 'record-stop' : 'record-start',
                       message: {}
                     })
                   )
                 }}
-                className="
-                  hidden md:inline-flex
-                  bg-gray-500/80 hover:bg-gray-600
-                  text-white px-4 py-3
-                  rounded text-x
-                  whitespace-nowrap shrink-0
-                "
+                className={`
+                w-11 h-11 rounded-full
+                flex items-center justify-center
+                transition
+                ${
+                  recording
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-white hover:bg-gray-100 text-black'
+                }
+              `}
+                disabled={loading}
               >
-                start
-              </Button>
-              <Button
-                onClick={() => {
-                  channelsRef.current['room'].send(
-                    JSON.stringify({
-                      event: 'record-stop',
-                      message: {}
-                    })
-                  )
-                }}
-                className="
-                  hidden md:inline-flex
-                  bg-gray-500/80 hover:bg-gray-600
-                  text-white px-4 py-3
-                  rounded text-x
-                  whitespace-nowrap shrink-0
-                "
-              >
-                stop
+                {recording ? '■' : '●'}
               </Button>
             </>
           )}
+
+          {/* Hangup */}
+          <Button
+            onClick={async () => {
+              await hangup()
+              localStreamRef.current?.getTracks().forEach((t) => t.stop())
+              localStreamRef.current = null
+              setSpaceState('exit')
+            }}
+            className="
+              w-11 h-11 rounded-full
+              flex items-center justify-center
+              bg-red-600 hover:bg-red-700
+              text-white text-lg
+            "
+          >
+            📞
+          </Button>
         </motion.div>
       </div>
 

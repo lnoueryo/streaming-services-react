@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger'
-import { TurnCredential } from '@/repositories/signaling.repository'
+import { TurnCredential } from '@/repositories/streaming.repository'
 import { useEffect, useRef, useState } from 'react'
 export type RemoteStream = {
   id: string

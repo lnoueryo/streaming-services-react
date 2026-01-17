@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { signalingRepositoryClient } from '@/lib/repositories/client/signaling.repository.client'
+import { signalingRepositoryClient } from '@/lib/repositories/client/streaming.repository.client'
 import { useSpace } from '../space-provider'
 import Lobby from './Lobby'
 import { useSignaling } from '../../signaling-provider'

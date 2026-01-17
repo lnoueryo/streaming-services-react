@@ -6,13 +6,13 @@ import RemoteVideo, {
 } from '@/components/organisms/RemoteVideo'
 
 import { useState, useEffect } from 'react'
-import { signalingRepositoryClient } from '@/lib/repositories/client/signaling.repository.client'
+import { signalingRepositoryClient } from '@/lib/repositories/client/streaming.repository.client'
 import { useSignaling } from '../signaling-provider'
 import { logger } from '@/lib/logger'
 import Button from '@/components/atoms/Button'
 import RequestList from '@/components/organisms/RequestList'
 import { SpaceUser } from '@/repositories/space-member.repository'
-import { useSpaceMember } from './space-member-provider'
+import { useSpaceMember } from '../space-member-provider'
 
 type TrackParticipant = {
   [streamId: string]: {
