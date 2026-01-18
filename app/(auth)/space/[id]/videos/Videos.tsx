@@ -9,6 +9,7 @@ import { signalingRepositoryClient } from '@/lib/repositories/client/streaming.r
 import { ApiFetchError } from '@/lib/api/base-client/base-client'
 import { useLoading } from '@/app/LoadingContext'
 import { useVideos } from './video-provider'
+import output from '@/config'
 
 export default function VideoList() {
   const { videos, setVideos } = useVideos()
@@ -75,7 +76,7 @@ export default function VideoList() {
     if (!open || !selected || !videoRef.current) return
 
     const video = videoRef.current
-    const src = `https://streaming-api.localtest.me${selected.hlsUrl}`
+    const src = `${output.streamingBackendApiOrigin.client}${selected.hlsUrl}`
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src
@@ -110,7 +111,7 @@ export default function VideoList() {
               <div className="aspect-video bg-black">
                 {v.thumbnailUrl ? (
                   <img
-                    src={`https://streaming-api.localtest.me${v.thumbnailUrl}`}
+                    src={`${output.streamingBackendApiOrigin.client}${v.thumbnailUrl}`}
                     alt="thumbnail"
                     className="w-full h-full object-cover"
                   />
