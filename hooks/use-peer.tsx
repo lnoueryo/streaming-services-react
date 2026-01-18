@@ -38,11 +38,18 @@ export default function usePeer() {
       logger.warn('PC', 'Peer already exists')
       return
     }
-    console.log(credentialRef.current)
-    const pc = new RTCPeerConnection({
+    const iceConfiguration = {
       ...config,
-      ...credentialRef.current
-    })
+      iceServers: credentialRef.current!.urls.map((url) => {
+        return {
+          urls: url,
+          username: credentialRef.current!.username,
+          credential: credentialRef.current!.credential,
+        }
+      })
+    }
+
+    const pc = new RTCPeerConnection(iceConfiguration)
     pcRef.current = pc
     const local = localStreamRef.current
     if (local) {
