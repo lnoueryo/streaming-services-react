@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { LoadingProvider } from './LoadingContext'
+import { ToastProvider } from './ToastContext' // ← 追加
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -20,15 +21,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased relative`}
       >
-        <LoadingProvider>{children}</LoadingProvider>
+        <LoadingProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </LoadingProvider>
       </body>
     </html>
   )

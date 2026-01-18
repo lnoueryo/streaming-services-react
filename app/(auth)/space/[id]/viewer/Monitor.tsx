@@ -6,13 +6,13 @@ import RemoteVideo, {
 } from '@/components/organisms/RemoteVideo'
 
 import { useState, useEffect } from 'react'
-import { signalingRepositoryClient } from '@/lib/repositories/client/signaling.repository.client'
+import { signalingRepositoryClient } from '@/lib/repositories/client/streaming.repository.client'
 import { useSignaling } from '../signaling-provider'
 import { logger } from '@/lib/logger'
 import Button from '@/components/atoms/Button'
 import RequestList from '@/components/organisms/RequestList'
-import { SpaceMember } from '@/repositories/space-member.repository'
-import { useSpaceMember } from './space-member-provider'
+import { SpaceUser } from '@/repositories/space-member.repository'
+import { useSpaceMember } from '../space-member-provider'
 
 type TrackParticipant = {
   [streamId: string]: {
@@ -56,7 +56,7 @@ export default function Monitor() {
     logger.log('DC EVENT', 'track-participant: ', participantTrack)
   }
   customDataMessageHandlers.current['room']['change-member-state'] = (
-    spaceMember: SpaceMember
+    spaceMember: SpaceUser
   ) => {
     setRequestList((prev) => {
       if (prev.some((r) => r.id === spaceMember.id)) {

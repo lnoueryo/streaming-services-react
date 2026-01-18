@@ -60,9 +60,11 @@ export class BaseClient {
     })
   }
 
-  delete(url: string) {
-    this.apiFetch(url, {
-      method: 'DELETE'
+  delete(url: string, body?: any) {
+    return this.apiFetch(url, {
+      method: 'DELETE',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' }
     })
   }
 

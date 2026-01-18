@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger'
-import { TurnCredential } from '@/repositories/signaling.repository'
+import { TurnCredential } from '@/repositories/streaming.repository'
 import { useEffect, useRef, useState } from 'react'
 export type RemoteStream = {
   id: string
@@ -30,6 +30,7 @@ export default function usePeer() {
   const onICECandidateHandler =
     useRef<(e: RTCPeerConnectionIceEvent) => void>(null)
   const retry = useRef(0)
+  const lastTimestampRef = useRef<number>(0)
   const maxRetry = 20
 
   const createPeer = async () => {
@@ -37,11 +38,18 @@ export default function usePeer() {
       logger.warn('PC', 'Peer already exists')
       return
     }
-    console.log(credentialRef.current)
-    const pc = new RTCPeerConnection({
+    const iceConfiguration = {
       ...config,
-      ...credentialRef.current
-    })
+      iceServers: credentialRef.current!.urls.map((url) => {
+        return {
+          urls: url,
+          username: credentialRef.current!.username,
+          credential: credentialRef.current!.credential,
+        }
+      })
+    }
+
+    const pc = new RTCPeerConnection(iceConfiguration)
     pcRef.current = pc
     const local = localStreamRef.current
     if (local) {
@@ -112,6 +120,7 @@ export default function usePeer() {
     }
     retry.current++
     logger.debug('%RECONNECT SCHEDULED', performance.now())
+    const retryTime = retry.current === 1 ? 0 : 2000
     return new Promise<boolean>((resolve) => {
       setTimeout(async () => {
         logger.log(
@@ -126,7 +135,7 @@ export default function usePeer() {
         } catch (error) {
           return await recreatePeer()
         }
-      }, 2000)
+      }, retryTime)
     })
   }
 
@@ -166,6 +175,18 @@ export default function usePeer() {
       logger.warn('DC', 'unknown event:', label, data)
     } else {
       logger.warn('DC', 'unknown channel:', label, data)
+    }
+  }
+
+  const readFrames = async (stream: MediaStream) => {
+    const track = stream.getVideoTracks()[0]
+    const processor = new MediaStreamTrackProcessor(track)
+    const reader = processor.readable.getReader()
+    while (true) {
+      const { done, value: frame } = await reader.read()
+      if (done) break
+      lastTimestampRef.current = frame.timestamp
+      frame.close()
     }
   }
 
@@ -266,6 +287,8 @@ export default function usePeer() {
     credentialRef,
     customDataMessageHandlers,
     channelsRef,
-    setRemoteStreams
+    lastTimestampRef,
+    setRemoteStreams,
+    readFrames
   }
 }

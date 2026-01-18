@@ -1,5 +1,5 @@
 import { BaseClient } from '@/lib/api/base-client/base-client'
-import { SpaceMember } from './space-member.repository'
+import { SpaceMember, SpaceUser } from './space-member.repository'
 
 type SpacePrivacy = 'public' | 'protected' | 'private'
 
@@ -58,7 +58,7 @@ export type TargetSpaceResponse = {
   name?: string
   privacy: SpacePrivacy
   creatorId: string
-  spaceMembers: SpaceMember[]
+  spaceMembers: SpaceUser[]
 }
 
 export class SpaceRepository {
