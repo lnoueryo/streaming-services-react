@@ -12,7 +12,9 @@ export default function useSignaling(url: string) {
     sendWS,
     wsOpenRef,
     wsRef,
-    disconnectWSConnection
+    disconnectWSConnection,
+    onClose,
+    reconnectWS
   } = useWebsocket(url)
   const {
     createPeer,
@@ -38,7 +40,22 @@ export default function useSignaling(url: string) {
   const localStreamRef = useRef<MediaStream | null>(null)
   const [connectionState, setConnectionState] =
     useState<ConnectionState>('stop')
-
+  onClose.current = async (e: CloseEvent) => {
+    if (!e.wasClean) {
+      await reconnectWS()
+      if (pcRef.current) {
+        await new Promise(async (resolve) => {
+          const timer = setInterval(() => {
+            if (wsOpenRef.current) {
+              sendWS({ event: 'offer' })
+              clearTimeout(timer)
+              resolve(true)
+            }
+          }, 2000)
+        })
+      }
+    }
+  }
   // WS messageのハンドラー登録
   customMessageHandlers.current['offer'] = async (data) => {
     const offer = JSON.parse(data)

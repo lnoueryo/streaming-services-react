@@ -6,7 +6,6 @@ export type RemoteVideoItem = {
 }
 export default function useWebsocket(url: string) {
   const wsRef = useRef<WebSocket | null>(null)
-  const [wsOpen, setWsOpen] = useState(false)
   const wsOpenRef = useRef(false)
   const customMessageHandlers = useRef<Record<string, (data: any) => void>>({})
   const retry = useRef(0)
@@ -61,7 +60,6 @@ export default function useWebsocket(url: string) {
           logger.error('[WS ERROR]', performance.now(), url, e)
           onError.current(e)
         }
-        setWsOpen(true)
         wsOpenRef.current = true
         resolve(ws)
       }
@@ -128,6 +126,7 @@ export default function useWebsocket(url: string) {
     sendWS,
     customMessageHandlers,
     wsOpenRef,
-    wsRef
+    wsRef,
+    onClose
   }
 }

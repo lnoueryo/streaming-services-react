@@ -44,7 +44,7 @@ export default function usePeer() {
         return {
           urls: url,
           username: credentialRef.current!.username,
-          credential: credentialRef.current!.credential,
+          credential: credentialRef.current!.credential
         }
       })
     }
